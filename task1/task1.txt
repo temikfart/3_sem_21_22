@@ -11,4 +11,4 @@
 3. Collect exit codes via waitpid/WEXITSTATUS.
 4. Note that a size of command can reach a lot of kbytes: type "getconf ARG_MAX" cmd to check it.
 5. Let the cmd can represent a sequence of programs which can be executed sequentially, if ‘|’ symbol is between programs’ names, 
-in this case output of i-1’th should be redirected from stdout to i'th stdin. See the example above. Implement this feature. 
+in this case output of i-1’th should be redirected from stdout to stdin of i'th. See the example above. Implement this feature. 
