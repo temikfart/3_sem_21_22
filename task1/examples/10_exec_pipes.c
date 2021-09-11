@@ -1,3 +1,5 @@
+// note: code is not optimal!
+
 #include <stdlib.h>
 #include <unistd.h>
 
