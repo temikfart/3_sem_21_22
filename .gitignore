@@ -1,2 +1,4 @@
 a.out
-/task1/.idea
+.idea
+/task1/shell-wrapper/cmake-build-debug
+/task1/shell-wrapper/Testing
