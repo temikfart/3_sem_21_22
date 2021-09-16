@@ -1,0 +1,3 @@
+Implement duplex pipe in C using OOP principles (see example 1).
+Maximize the performance of echo test (from parent to child and back) on huge files (> 4 Gb).
+"Play" with buffer sizes and limits on pipe size.
