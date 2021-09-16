@@ -9,34 +9,31 @@
 #define BUFFER_SIZE 2048*1024
 
 char ** scan_cmd(int * num) {
-  char ** res = malloc(BUFFER_SIZE);
+  char ** res = NULL;
 
   // Разбор аргументов
   char delim[] = "|";
   char * cmds = malloc(BUFFER_SIZE);
 
-  // Считывание большой команды
-  fgets(cmds, BUFFER_SIZE, stdin);
-
-  // Обработка ошибки чтения
-  if(ferror(stdin) != 0) {
-    printf("Error: incorrect command reading.\n");
-    exit(1);
+  // Считывание большой команды и обработка ошибок
+  if(NULL == fgets(cmds, BUFFER_SIZE, stdin)) {
+    char * ans = malloc(50);
+    sprintf(ans, "Incorrect command reading.");
+    perror(ans);
+    free(ans);
   }
-
-//  printf("\nWhole string: %s", cmds);
 
   int i = 0;
+  int res_sz = 0;
   for (char *p = strtok(cmds, delim); p != NULL; p = strtok(NULL, delim)) {
-    res[i] = p;
-//    printf("str%d: %s\n", i, p);
-//    printf("str%d: %s\n", i, res[i]);
+    res_sz += sizeof(char *);
+    res = realloc(res, res_sz);
+    res[i] = strdup(p);
     i++;
   }
-  printf("i = %d\n", i);
   *num = i;
-//  printf("num: %d\n", *num);
 
+  free(cmds);
   return res;
 }
 
@@ -70,6 +67,9 @@ int main() {
 //    exit(42);
 //  }
 
+  for(int i = 0; i < max_elem; i++) {
+    free(buf[i]);
+  }
   free(buf);
   return 0;
 }
