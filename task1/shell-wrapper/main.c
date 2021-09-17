@@ -26,11 +26,13 @@ CommandLine parse_tokens(char ** tokens, int num) {
   res.cmds = malloc(cmds_sz);
   int argv_sz[res.size];
 
+  // Инициализация
   for(int a = 0; a < res.size; a++) {
     argv_sz[a] = 0;
     res.cmds[a].argv = NULL;
   }
 
+  // Разбор аргументов
   int i, j;
   char delim[] = " ";
   for(i = 0; i < res.size; i++) {
@@ -51,11 +53,8 @@ CommandLine parse_tokens(char ** tokens, int num) {
 char ** scan_cmd(int * num) {
   char ** res = NULL;
 
-  // Разбор аргументов
-  char delim[] = "|";
-  char * cmds = malloc(BUFFER_SIZE);
-
   // Считывание большой команды и обработка ошибок
+  char * cmds = malloc(BUFFER_SIZE);
   if(NULL == fgets(cmds, BUFFER_SIZE, stdin)) {
     char * ans = malloc(50);
     sprintf(ans, "Incorrect command reading.");
@@ -65,6 +64,7 @@ char ** scan_cmd(int * num) {
 
   int i = 0;
   int res_sz = 0;
+  char delim[] = "|";
   for (char *p = strtok(cmds, delim); p != NULL; p = strtok(NULL, delim)) {
     res_sz += sizeof(char *);
     res = realloc(res, res_sz);
@@ -82,23 +82,27 @@ int main() {
   int max_elem;
   char ** buf = scan_cmd(&max_elem);
 
-  // Печать массива отдельных команд
-  for (int k = 0; k < max_elem; k++) {
-    printf("buf[%d]: %s\n", k, buf[k]);
-  }
-
   // Парсинг команд
-  CommandLine cmds = parse_tokens(buf, max_elem);
+  CommandLine commands = parse_tokens(buf, max_elem);
+  // Отладочная печать разобранных команд
+  printf("Parsed line:\n");
+  for(int i = 0; i < max_elem; i++) {
+    printf("\t(%d): ", i);
+    for(int j = 0; j < commands.cmds[i].argc; j++) {
+      printf("%s ", commands.cmds[i].argv[j]);
+    }
+    printf("\n");
+  }
 
   // Освобождение памяти
-  for (int i = 0; i < cmds.size; i++) {
+  for (int i = 0; i < commands.size; i++) {
     free(buf[i]);
-    for (int j = 0; j < cmds.cmds[i].argc; j++) {
-      free(cmds.cmds[i].argv[j]);
+    for (int j = 0; j < commands.cmds[i].argc; j++) {
+      free(commands.cmds[i].argv[j]);
     }
-    free(cmds.cmds[i].argv);
+    free(commands.cmds[i].argv);
   }
   free(buf);
-  free(cmds.cmds);
+  free(commands.cmds);
   return 0;
 }
