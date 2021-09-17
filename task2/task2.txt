@@ -1,5 +1,5 @@
 Implement duplex pipe in C using some OOP principles (see example 1).
-Maximize the performance of echo test (from parent to child and back) on huge files (> 4 Gb).
+Maximize the performance of echo test (from parent to child and back) on huge files (> 4 Gb). The main metric is time spent on data transmission.
 "Play" with buffer sizes and limits on pipe size.
 
 Notes:
