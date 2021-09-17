@@ -23,11 +23,12 @@ char ** scan_CmdLine(int * num) {
 
   // Считывание большой команды и обработка ошибок
   char * cmds = malloc(BUFFER_SIZE);
-  if(NULL == fgets(cmds, BUFFER_SIZE, stdin)) {
+  if (NULL == fgets(cmds, BUFFER_SIZE, stdin)) {
     char * ans = malloc(50);
     sprintf(ans, "Incorrect command reading");
     perror(ans);
     free(ans);
+    exit(1);
   }
 
   int i = 0;
@@ -59,7 +60,7 @@ CommandLine scan_cmds() {
 
   // Инициализация
   for(int a = 0; a < res.size; a++) {
-    argv_sz[a] = 0;
+    argv_sz[a] = 1;
     res.cmds[a].argv = NULL;
   }
 
@@ -107,8 +108,31 @@ void free_cmds_mem(CommandLine commands) {
 }
 
 int main() {
-  // Парсинг команд
+  // Получение и парсинг команд
   CommandLine commands = scan_cmds();
+
+  const pid_t pid = fork();
+  // Обработка ошибок вызова fork()
+  if (pid < 0) {
+    char * ans = malloc(50);
+    sprintf(ans, "fork() unsuccessful");
+    perror(ans);
+    free(ans);
+    exit(1);
+  }
+  // Родитель
+  if (pid > 0) {
+    int status;
+    waitpid(pid, &status, 0);
+    printf("(p_pid:%d) Ret code: %d\n", pid, WEXITSTATUS(status));
+  } else {
+    // Ребёнок
+    printf("(c_pid:%d) I'm a child!\n", pid);
+    exit(42);
+  }
+
+//  execvp(commands.cmds[0].argv[0], commands.cmds[0].argv);
+//  printf("exec* failed\n");
 
   // Освобождение памяти
   free_cmds_mem(commands);
