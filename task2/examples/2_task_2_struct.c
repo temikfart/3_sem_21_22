@@ -11,8 +11,8 @@ typedef struct op_table  {
 
 typedef struct pPipe {
         char* data; // intermediate buffer
-        int fd_rx[2]; // array of RX descriptors for "pipe()" call
-        int fd_tx[2]; // array of TX descriptors for "pipe()" call
+        int fd_direct[2]; // array of r/w descriptors for "pipe()" call (for parent-->child direction)
+        int fd_back[2]; // array of r/w descriptors for "pipe()" call (for child-->parent direction)
         size_t len; // data length in intermediate buffer
         Ops actions;
 } Pipe;
