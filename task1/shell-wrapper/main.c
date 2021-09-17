@@ -18,46 +18,14 @@ typedef struct CommandLine {
   int size;
 }CommandLine;
 
-CommandLine parse_tokens(char ** tokens, int num) {
-  CommandLine res;
-
-  res.size = num;
-  int cmds_sz = (int)(res.size * sizeof(Command));
-  res.cmds = malloc(cmds_sz);
-  int argv_sz[res.size];
-
-  // Инициализация
-  for(int a = 0; a < res.size; a++) {
-    argv_sz[a] = 0;
-    res.cmds[a].argv = NULL;
-  }
-
-  // Разбор аргументов
-  int i, j;
-  char delim[] = " ";
-  for(i = 0; i < res.size; i++) {
-    j = 0;
-    for (char *p = strtok(tokens[i], delim); p != NULL; p = strtok(NULL, delim)) {
-      argv_sz[i] += sizeof(char *);
-      res.cmds[i].argv = realloc(res.cmds[i].argv, argv_sz[i]);
-      res.cmds[i].argv[j] = strdup(p);
-      j++;
-    }
-    res.cmds[i].argc = j;
-  }
-
-
-  return res;
-}
-
-char ** scan_cmd(int * num) {
+char ** scan_CmdLine(int * num) {
   char ** res = NULL;
 
   // Считывание большой команды и обработка ошибок
   char * cmds = malloc(BUFFER_SIZE);
   if(NULL == fgets(cmds, BUFFER_SIZE, stdin)) {
     char * ans = malloc(50);
-    sprintf(ans, "Incorrect command reading.");
+    sprintf(ans, "Incorrect command reading");
     perror(ans);
     free(ans);
   }
@@ -77,32 +45,73 @@ char ** scan_cmd(int * num) {
   return res;
 }
 
-int main() {
+CommandLine scan_cmds() {
+  CommandLine res;
+
   // Чтение массива команд
   int max_elem;
-  char ** buf = scan_cmd(&max_elem);
+  char ** buf = scan_CmdLine(&max_elem);
 
-  // Парсинг команд
-  CommandLine commands = parse_tokens(buf, max_elem);
+  res.size = max_elem;
+  int cmds_sz = (int)(res.size * sizeof(Command));
+  res.cmds = malloc(cmds_sz);
+  int argv_sz[res.size];
+
+  // Инициализация
+  for(int a = 0; a < res.size; a++) {
+    argv_sz[a] = 0;
+    res.cmds[a].argv = NULL;
+  }
+
+  // Разбор аргументов
+  int i, j;
+  char delim[] = " ";
+  for(i = 0; i < res.size; i++) {
+    j = 0;
+    for (char *p = strtok(buf[i], delim); p != NULL; p = strtok(NULL, delim)) {
+      argv_sz[i] += sizeof(char *);
+      res.cmds[i].argv = realloc(res.cmds[i].argv, argv_sz[i]);
+      res.cmds[i].argv[j] = strdup(p);
+      j++;
+    }
+    res.cmds[i].argc = j;
+  }
+
   // Отладочная печать разобранных команд
   printf("Parsed line:\n");
-  for(int i = 0; i < max_elem; i++) {
+  for(i = 0; i < res.size; i++) {
     printf("\t(%d): ", i);
-    for(int j = 0; j < commands.cmds[i].argc; j++) {
-      printf("%s ", commands.cmds[i].argv[j]);
+    for(j = 0; j < res.cmds[i].argc; j++) {
+      printf("%s ", res.cmds[i].argv[j]);
     }
     printf("\n");
   }
 
-  // Освобождение памяти
-  for (int i = 0; i < commands.size; i++) {
+  // Освобождение памяти буфера
+  for (i = 0; i < max_elem; i++) {
     free(buf[i]);
+  }
+  free(buf);
+
+  return res;
+}
+
+void free_cmds_mem(CommandLine commands) {
+  for (int i = 0; i < commands.size; i++) {
     for (int j = 0; j < commands.cmds[i].argc; j++) {
       free(commands.cmds[i].argv[j]);
     }
     free(commands.cmds[i].argv);
   }
-  free(buf);
   free(commands.cmds);
+}
+
+int main() {
+  // Парсинг команд
+  CommandLine commands = scan_cmds();
+
+  // Освобождение памяти
+  free_cmds_mem(commands);
+
   return 0;
 }
