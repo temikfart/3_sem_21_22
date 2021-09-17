@@ -75,7 +75,12 @@ CommandLine scan_cmds() {
       res.cmds[i].argv[j] = strdup(p);
       j++;
     }
-    res.cmds[i].argc = j;
+    // Последний элемент argv должен быть NULL
+    argv_sz[i] += sizeof(char *);
+    res.cmds[i].argv = realloc(res.cmds[i].argv, argv_sz[i]);
+    res.cmds[i].argv[j] = NULL;
+
+    res.cmds[i].argc = j-1;
   }
 
   // Отладочная печать разобранных команд
@@ -99,7 +104,8 @@ CommandLine scan_cmds() {
 
 void free_cmds_mem(CommandLine commands) {
   for (int i = 0; i < commands.size; i++) {
-    for (int j = 0; j < commands.cmds[i].argc; j++) {
+    // <= т.к. последний NULL
+    for (int j = 0; j <= commands.cmds[i].argc; j++) {
       free(commands.cmds[i].argv[j]);
     }
     free(commands.cmds[i].argv);
@@ -111,28 +117,35 @@ int main() {
   // Получение и парсинг команд
   CommandLine commands = scan_cmds();
 
-  const pid_t pid = fork();
-  // Обработка ошибок вызова fork()
-  if (pid < 0) {
-    char * ans = malloc(50);
-    sprintf(ans, "fork() unsuccessful");
-    perror(ans);
-    free(ans);
-    exit(1);
-  }
-  // Родитель
-  if (pid > 0) {
-    int status;
-    waitpid(pid, &status, 0);
-    printf("(p_pid:%d) Ret code: %d\n", pid, WEXITSTATUS(status));
-  } else {
-    // Ребёнок
-    printf("(c_pid:%d) I'm a child!\n", pid);
-    exit(42);
-  }
+  Command child_cmd;
+  for(int i = 0; i < commands.size; i++) {
+    child_cmd = commands.cmds[i];
+    const pid_t pid = fork();
 
-//  execvp(commands.cmds[0].argv[0], commands.cmds[0].argv);
-//  printf("exec* failed\n");
+    // Обработка ошибок вызова fork()
+    if (pid < 0) {
+      char *ans = malloc(50);
+      sprintf(ans, "fork() unsuccessful");
+      perror(ans);
+      free(ans);
+      exit(1);
+    }
+    // Родитель
+    if (pid > 0) {
+      int status;
+      waitpid(pid, &status, 0);
+      printf("(p_pid:%d) Ret code: %d\n", pid, WEXITSTATUS(status));
+    } else {
+      // Ребёнок
+      printf("(c_pid:%d) I'm a child, my cmd is %s!\n", pid, child_cmd.argv[0]);
+      // Исполнение
+      printf("Executing %s:\n", child_cmd.argv[0]);
+      execvp(child_cmd.argv[0], child_cmd.argv);
+      // Обработка ошибок exec*
+      printf("exec* failed\n");
+      exit(42);
+    }
+  }
 
   // Освобождение памяти
   free_cmds_mem(commands);
