@@ -1,22 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <ctype.h>
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/wait.h>
 #include <string.h>
-
-#define BUFFER_SIZE 2048*1024
-
-typedef struct Command {
-  char ** argv;
-  int argc;
-}Command;
-
-typedef struct CommandLine {
-  Command * cmds;
-  int size;
-}CommandLine;
+#include "sw_parse.h"
 
 char ** scan_CmdLine(int * num) {
   char ** res = NULL;
@@ -66,7 +51,7 @@ CommandLine scan_cmds() {
 
   // Разбор аргументов
   int i, j;
-  char delim[] = " ";
+  char delim[] = " \n";
   for(i = 0; i < res.size; i++) {
     j = 0;
     for (char *p = strtok(buf[i], delim); p != NULL; p = strtok(NULL, delim)) {
@@ -80,7 +65,7 @@ CommandLine scan_cmds() {
     res.cmds[i].argv = realloc(res.cmds[i].argv, argv_sz[i]);
     res.cmds[i].argv[j] = NULL;
 
-    res.cmds[i].argc = j-1;
+    res.cmds[i].argc = j;
   }
 
   // Отладочная печать разобранных команд
@@ -104,51 +89,10 @@ CommandLine scan_cmds() {
 
 void free_cmds_mem(CommandLine commands) {
   for (int i = 0; i < commands.size; i++) {
-    // <= т.к. последний NULL
-    for (int j = 0; j <= commands.cmds[i].argc; j++) {
+    for (int j = 0; j < commands.cmds[i].argc; j++) {
       free(commands.cmds[i].argv[j]);
     }
     free(commands.cmds[i].argv);
   }
   free(commands.cmds);
-}
-
-int main() {
-  // Получение и парсинг команд
-  CommandLine commands = scan_cmds();
-
-  Command child_cmd;
-  for(int i = 0; i < commands.size; i++) {
-    child_cmd = commands.cmds[i];
-    const pid_t pid = fork();
-
-    // Обработка ошибок вызова fork()
-    if (pid < 0) {
-      char *ans = malloc(50);
-      sprintf(ans, "fork() unsuccessful");
-      perror(ans);
-      free(ans);
-      exit(1);
-    }
-    // Родитель
-    if (pid > 0) {
-      int status;
-      waitpid(pid, &status, 0);
-      printf("(p_pid:%d) Ret code: %d\n", pid, WEXITSTATUS(status));
-    } else {
-      // Ребёнок
-      printf("(c_pid:%d) I'm a child, my cmd is %s!\n", pid, child_cmd.argv[0]);
-      // Исполнение
-      printf("Executing %s:\n", child_cmd.argv[0]);
-      execvp(child_cmd.argv[0], child_cmd.argv);
-      // Обработка ошибок exec*
-      printf("exec* failed\n");
-      exit(42);
-    }
-  }
-
-  // Освобождение памяти
-  free_cmds_mem(commands);
-
-  return 0;
 }
