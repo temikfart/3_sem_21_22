@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "sw_parse.h"
+#include "sw_main.h"
 
 char ** scan_CmdLine(int * num) {
   char ** res = NULL;
@@ -9,11 +10,7 @@ char ** scan_CmdLine(int * num) {
   // Считывание большой команды и обработка ошибок
   char * cmds = malloc(BUFFER_SIZE);
   if (NULL == fgets(cmds, BUFFER_SIZE, stdin)) {
-    char * ans = malloc(50);
-    sprintf(ans, "Incorrect command reading");
-    perror(ans);
-    free(ans);
-    exit(1);
+    my_perror("Incorrect command reading");
   }
 
   int i = 0;
