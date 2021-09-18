@@ -16,10 +16,13 @@ void my_perror(const char *msg) {
 }
 
 int main() {
-  // Получение и парсинг команд
-  CommandLine commands = scan_cmds();
+  while(1) {
+    printf(">>> ");
+    // Получение и парсинг команд
+    CommandLine commands = scan_cmds();
 
-  run_cmd(commands);
+    run_cmd(commands);
+  }
 
   return 0;
 }

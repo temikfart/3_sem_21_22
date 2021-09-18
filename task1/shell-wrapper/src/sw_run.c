@@ -25,6 +25,11 @@ void run_cmd(CommandLine commands) {
     if (pid > 0) {
       fd_in = fd[0];
       close(fd[1]);
+
+      if(strcmp(commands.cmds[i].argv[0], "exit") == 0) {
+        printf("Goodbye!\nExiting...\n");
+        exit(0);
+      }
     } else {
       dup2(fd_in, 0);
       if (i != commands.size - 1) {
