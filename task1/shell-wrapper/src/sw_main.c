@@ -1,11 +1,6 @@
 #include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/wait.h>
 #include "sw_parse.h"
 #include "sw_run.h"
-#include "sw_main.h"
 
 int main() {
   while(1) {
