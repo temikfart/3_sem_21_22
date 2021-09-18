@@ -69,14 +69,14 @@ CommandLine scan_cmds() {
   }
 
   // Отладочная печать разобранных команд
-  printf("Parsed line:\n");
-  for(i = 0; i < res.size; i++) {
-    printf("\t(%d): ", i);
-    for(j = 0; j < res.cmds[i].argc; j++) {
-      printf("%s ", res.cmds[i].argv[j]);
-    }
-    printf("\n");
-  }
+//  printf("Parsed line:\n");
+//  for(i = 0; i < res.size; i++) {
+//    printf("\t(%d): ", i);
+//    for(j = 0; j < res.cmds[i].argc; j++) {
+//      printf("%s ", res.cmds[i].argv[j]);
+//    }
+//    printf("\n");
+//  }
 
   // Освобождение памяти буфера
   for (i = 0; i < max_elem; i++) {
