@@ -7,6 +7,7 @@ add_executable(shell-wrapper
         src/sw_main.c
         src/sw_parse.c
         src/sw_run.c
+        include/sw_main.h
         include/sw_parse.h
         include/sw_run.h)
 include_directories(include)

@@ -7,14 +7,6 @@
 #include "sw_run.h"
 #include "sw_main.h"
 
-void my_perror(const char *msg) {
-  char *ans = malloc(strlen(msg));
-  sprintf(ans, "%s", msg);
-  perror(ans);
-  free(ans);
-  exit(1);
-}
-
 int main() {
   while(1) {
     printf(">>> ");

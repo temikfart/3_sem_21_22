@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 #include "sw_parse.h"
-#include "sw_main.h"
 
 char ** scan_CmdLine(int * num) {
   char ** res = NULL;
@@ -10,7 +10,8 @@ char ** scan_CmdLine(int * num) {
   // Считывание большой команды и обработка ошибок
   char * cmds = malloc(BUFFER_SIZE);
   if (NULL == fgets(cmds, BUFFER_SIZE, stdin)) {
-    my_perror("Incorrect command reading");
+    perror("Incorrect command reading");
+    exit(errno);
   }
 
   int i = 0;
@@ -64,16 +65,6 @@ CommandLine scan_cmds() {
 
     res.cmds[i].argc = j;
   }
-
-  // Отладочная печать разобранных команд
-//  printf("Parsed line:\n");
-//  for(i = 0; i < res.size; i++) {
-//    printf("\t(%d): ", i);
-//    for(j = 0; j < res.cmds[i].argc; j++) {
-//      printf("%s ", res.cmds[i].argv[j]);
-//    }
-//    printf("\n");
-//  }
 
   // Освобождение памяти буфера
   for (i = 0; i < max_elem; i++) {
