@@ -1,7 +1,6 @@
-// note: code is not optimal!
-
 #include <stdlib.h>
 #include <unistd.h>
+#include <sys/types.h>
 
 void seq_pipe(char ***cmd)
 {
@@ -15,7 +14,8 @@ void seq_pipe(char ***cmd)
     if ((pid = fork()) == -1) {
           exit(1);
     } else if (pid == 0) {
-        dup2(fd_in, 0); //stdin -> read from pipe
+        if (i > 0)
+          dup2(fd_in, 0); //stdin <- read from fd_in
         if (cmd[i+1] != NULL)
           dup2(p[1], 1); //stdout -> write to pipe
         close(p[0]);
@@ -24,7 +24,7 @@ void seq_pipe(char ***cmd)
     } else {
       wait(NULL);
       close(p[1]);
-      fd_in = p[0];
+      fd_in = p[0]; //fd_in <--read from pipe
         i++;
     }
 }
@@ -33,9 +33,9 @@ void seq_pipe(char ***cmd)
 
 int main()
 {
-  char *ls[] = {"ls", NULL};
-  char *wc1[] = {"wc", NULL};
-  char *wc2[] = {"wc", NULL};
-  char **cmd[] = {ls, wc1, wc2, NULL};
+  char *ls[] = {"/bin/ls","-ltr",".", NULL};
+  char *grep1[] = {"grep","rw",NULL};
+  char *grep2[] = {"grep","1", NULL};
+  char **cmd[] = {ls, grep1, grep2, NULL};
   seq_pipe(cmd);
 }
