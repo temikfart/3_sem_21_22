@@ -15,9 +15,9 @@ void seq_pipe(char ***cmd)
     if ((pid = fork()) == -1) {
           exit(1);
     } else if (pid == 0) {
-        dup2(fd_in, 0);
+        dup2(fd_in, 0); //stdin -> read from pipe
         if (cmd[i+1] != NULL)
-          dup2(p[1], 1);
+          dup2(p[1], 1); //stdout -> write to pipe
         close(p[0]);
         execvp((cmd)[i][0], cmd[i]);
         exit(2);
