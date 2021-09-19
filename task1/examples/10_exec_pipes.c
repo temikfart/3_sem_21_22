@@ -1,5 +1,18 @@
 /* Небольшое улучшение примера 10, которое позволяет держать не более 2 пайпов открытыми
-Пайп пересоздается n-1 раз, но старые пайпы закрываются за ненадобностью. На одном пайпе я не вижу смысла делать, так как ввод и вывод перемешаются */
+Пайп пересоздается n-1 раз, но старые пайпы закрываются за ненадобностью. На одном пайпе я не вижу смысла делать, так как ввод и вывод перемешаются 
+Для того, чтобы убедиться, посмотрите вывод используемых дескрипторов (строка 22-23).
+У меня это:
+New used pipe descriptors: 3 4
+Input descriptor for current child process: 0
+New used pipe descriptors: 4 5
+Input descriptor for current child process: 3
+New used pipe descriptors: 3 5
+Input descriptor for current child process: 4
+New used pipe descriptors: 4 5
+Input descriptor for current child process: 3
+*/
+
+
 
 #include <stdlib.h>
 #include <unistd.h>
