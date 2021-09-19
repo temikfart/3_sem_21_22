@@ -15,7 +15,7 @@ void seq_pipe(char ***cmd)
           exit(1);
     } else if (pid == 0) {
         if (i > 0)
-          dup2(fd_in, 0); //stdin <- read from fd_in
+          dup2(fd_in, 0); //stdin <- read from fd_in (dup и dup2 создают копию файлового дескриптора oldfd)
         if (cmd[i+1] != NULL)
           dup2(p[1], 1); //stdout -> write to pipe
         close(p[0]);
