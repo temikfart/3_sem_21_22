@@ -25,10 +25,15 @@ void run_cmd(CommandLine commands) {
 
     // Родитель
     if (pid > 0) {
-      fd_in = fd[0];
       close(fd[1]);
+      if (i > 0) {
+        close(fd[1]);
+      }
+      fd_in = fd[0];
     } else {
-      dup2(fd_in, 0);
+      if (i > 0) {
+        dup2(fd_in, 0);
+      }
       if (i != commands.size - 1) {
         dup2(fd[1], 1);
       }
