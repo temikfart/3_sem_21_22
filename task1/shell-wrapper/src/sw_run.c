@@ -27,7 +27,7 @@ void run_cmd(CommandLine commands) {
     if (pid > 0) {
       close(fd[1]);
       if (i > 0) {
-        close(fd[1]);
+        close(fd_in);
       }
       fd_in = fd[0];
     } else {
