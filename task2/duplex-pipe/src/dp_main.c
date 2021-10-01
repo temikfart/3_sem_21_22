@@ -6,33 +6,16 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include "dp_main.h"
-
-size_t f_length(String *self) {
-  return strlen(self->data);
-}
-void f_delete(String *self) {
-  free(self->data);
-  free(self);
-}
-String *ctorString(int data_sz) {
-  String *str = malloc(sizeof(String));
-  str->data = calloc(data_sz, sizeof(char));
-
-  // Methods
-  str->len = f_length;
-  str->delete = f_delete;
-
-  return str;
-}
+#include "dp_string.h"
+#include "dp_pipe.h"
 
 int main() {
-  String* str1 = ctorString(BUF_SZ);
-  String* str2 = ctorString(BUF_SZ);
-  int fd1[2], fd2[2];
+  Pipe Pipe_PtoC = ctorPipe();
+  Pipe Pipe_CtoP = ctorPipe();
 
-  if ( (pipe(fd1) < 0) || (pipe(fd2) < 0) ) {
+  if ( (pipe(Pipe_PtoC.fd) < 0) || (pipe(Pipe_CtoP.fd) < 0) ) {
     perror("Invalid pipe");
-    return 1;
+    exit(1);
   }
 
   switch (fork()) {
@@ -41,33 +24,37 @@ int main() {
       return 1;
     case 0:     /* Child process */
       // The first fd --- read end
-      close(fd1[1]);
-      read(fd1[0], str1->data, BUF_SZ);
-      printf("(C) Received: %s\n", str1->data);
+      close(Pipe_PtoC.fd[1]);
+      read(Pipe_PtoC.fd[0], Pipe_PtoC.buf.data, BUF_SZ);
+      printf("(C) Received: %s\n", Pipe_PtoC.buf.data);
 
       // The second fd --- write end
-      close(fd2[0]);
-      strcat(str2->data, "Hi there!");
-      write(fd2[1], str2->data, str2->len(str2));
-      printf("(C) Send: %s\n", str2->data);
+      close(Pipe_CtoP.fd[0]);
+      scanf("%s", Pipe_CtoP.buf.data);
+      write(Pipe_CtoP.fd[1],
+            Pipe_CtoP.buf.data,
+            Pipe_CtoP.buf.len(&Pipe_CtoP.buf));
+      printf("(C) Send: %s\n", Pipe_CtoP.buf.data);
 
       break;
     default:    /* Parent process */
       // The first fd --- write end
-      close(fd1[0]);
-      strcat(str1->data, "Hello");
-      write(fd1[1], str1->data, str1->len(str1));
-      printf("(P) Send: %s\n", str1->data);
+      close(Pipe_PtoC.fd[0]);
+      scanf("%s", Pipe_PtoC.buf.data);
+      write(Pipe_PtoC.fd[1],
+            Pipe_PtoC.buf.data,
+            Pipe_PtoC.buf.len(&Pipe_PtoC.buf));
+      printf("(P) Send: %s\n", Pipe_PtoC.buf.data);
 
       // The second fd --- read end
-      close(fd2[1]);
-      read(fd2[0], str2->data, BUF_SZ);
-      printf("(P) Received: %s\n", str2->data);
+      close(Pipe_CtoP.fd[1]);
+      read(Pipe_CtoP.fd[0], Pipe_CtoP.buf.data, BUF_SZ);
+      printf("(P) Received: %s\n", Pipe_CtoP.buf.data);
 
       break;
   }
 
-  str1->delete(str1);
-  str2->delete(str2);
+  Pipe_PtoC.clear(&Pipe_PtoC);
+  Pipe_CtoP.clear(&Pipe_CtoP);
   return 0;
 }
