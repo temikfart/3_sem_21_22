@@ -7,16 +7,18 @@ typedef struct pPipe {
   String buf;
 
   // Methods:
-//  size_t (*snd)(Pipe *self);
-//  size_t (*rcv)(Pipe *self);
-  void (*clear)(Pipe* Pipe);
-  size_t (*size)(Pipe* Pipe);
+  void (*send)(Pipe *self);
+  void (*receive)(Pipe *self);
+  void (*clear)(Pipe* self);
+  size_t (*size)(Pipe* self);
+  void (*pipe)(Pipe* self);
 } Pipe;
 
 // Pipe methods
-//size_t p_snd(Pipe *self);
-//size_t p_rcv(Pipe *self);
-void p_clear(Pipe* Pipe);
-size_t p_size(Pipe* Pipe);
+void p_snd(Pipe *self); // size_t ???
+void p_rcv(Pipe *self); // size_t ???
+void p_clear(Pipe* self);
+size_t p_size(Pipe* self);
+void p_pipe(Pipe* self);
 
 Pipe ctorPipe();
