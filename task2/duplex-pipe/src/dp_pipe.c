@@ -4,26 +4,28 @@
 #include <stdio.h>
 #include <unistd.h>
 
-void p_snd(Pipe* self) {
+void p_snd(Pipe *self) {
   close(self->fd[0]);
   scanf("%s", self->buf.data);
   write(self->fd[1],
         self->buf.data,
         self->buf.len(&self->buf));
   printf("(P) Send: %s\n", self->buf.data);
+  close(self->fd[1]);
 }
-void p_rcv(Pipe* self) {
+void p_rcv(Pipe *self) {
   close(self->fd[1]);
   read(self->fd[0], self->buf.data, BUF_SZ);
   printf("(C) Received: %s\n", self->buf.data);
+  close(self->fd[0]);
 }
-void p_clear(Pipe* self) {
+void p_clear(Pipe *self) {
   self->buf.clear(&self->buf);
 }
-size_t p_size(Pipe* self) {
+size_t p_size(Pipe *self) {
   return self->buf.len(&self->buf);
 }
-void p_pipe(Pipe* self) {
+void p_pipe(Pipe *self) {
   if(pipe(self->fd) < 0) {
     perror("Invalid pipe");
     exit(1);
