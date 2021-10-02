@@ -33,7 +33,7 @@ void *th_func(void * arg)
 
   /*
    * cpu affinity for the calling thread 
-   * first parameter is the pid, 0 = calling thread
+   * first parameter is the thread id, 0 = calling thread
    * second parameter is the size of your cpuset
    * third param is the cpuset in which your thread will be
    * placed. Each bit represents a CPU
