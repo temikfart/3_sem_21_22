@@ -6,17 +6,26 @@
 
 void p_snd(Pipe *self) {
   close(self->fd[0]);
-  scanf("%s", self->buf.data);
-  write(self->fd[1],
-        self->buf.data,
-        self->buf.len(&self->buf));
-  printf("(P) Send: %s\n", self->buf.data);
+  FILE *fin = fopen(self->fp_r, "r");
+
+  size_t last_sym = BUF_SZ;
+  while(last_sym == BUF_SZ) {
+    last_sym = fread(self->buf.data, sizeof(char), BUF_SZ, fin);
+    write(self->fd[1], self->buf.data, self->buf.len(&self->buf));
+  }
+
+  fclose(fin);
   close(self->fd[1]);
 }
 void p_rcv(Pipe *self) {
   close(self->fd[1]);
-  read(self->fd[0], self->buf.data, BUF_SZ);
-  printf("(C) Received: %s\n", self->buf.data);
+  FILE *fout = fopen(self->fp_w, "w");
+
+  while(read(self->fd[0], self->buf.data, BUF_SZ) > 0) {
+    fwrite(self->buf.data, sizeof(char), self->buf.len(&self->buf), fout);
+  }
+
+  fclose(fout);
   close(self->fd[0]);
 }
 void p_clear(Pipe *self) {
@@ -32,9 +41,11 @@ void p_pipe(Pipe *self) {
   }
 }
 
-Pipe ctorPipe() {
+Pipe ctorPipe(const char *fp_r, const char *fp_w) {
   Pipe Pipe;
   Pipe.buf = ctorString(BUF_SZ);
+  Pipe.fp_r = fp_r;
+  Pipe.fp_w = fp_w;
 
   Pipe.send = p_snd;
   Pipe.receive = p_rcv;

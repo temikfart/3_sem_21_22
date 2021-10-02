@@ -1,10 +1,13 @@
 #pragma once
+#include <stdio.h>
 #include "dp_string.h"
 
 typedef struct pPipe Pipe;
 typedef struct pPipe {
   int fd[2];
   String buf;
+  const char *fp_r;
+  const char *fp_w;
 
   // Methods:
   void (*send)(Pipe *self);
@@ -21,4 +24,4 @@ void p_clear(Pipe *self);
 size_t p_size(Pipe *self);
 void p_pipe(Pipe *self);
 
-Pipe ctorPipe();
+Pipe ctorPipe(const char *fp_w, const char *fp_r);
