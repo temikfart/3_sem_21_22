@@ -1,6 +1,6 @@
 #pragma once
 
-#define BUF_SZ 1024*1024
+#define BUF_SZ 254*256+3
 
 typedef struct pString String;
 typedef struct pString {

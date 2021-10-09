@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include "dp_string.h"
 
+#define PCG_SZ 256
+
 typedef struct pPipe Pipe;
 typedef struct pPipe {
   int fd[2];

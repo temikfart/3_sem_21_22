@@ -14,7 +14,7 @@ int main(int argc, char *argv[]) {
   Pipe Pipe_CtoP = ctorPipe(argv[2], argv[1]);
 
   Pipe_PtoC.pipe(&Pipe_PtoC);
-//  Pipe_CtoP.pipe(&Pipe_CtoP);
+  Pipe_CtoP.pipe(&Pipe_CtoP);
 
   switch (fork()) {
     case -1:
@@ -22,11 +22,11 @@ int main(int argc, char *argv[]) {
       return 1;
     case 0:     /* Child process */
       Pipe_PtoC.receive(&Pipe_PtoC);
-//      Pipe_CtoP.send(&Pipe_CtoP);
+      Pipe_CtoP.send(&Pipe_CtoP);
       break;
     default:    /* Parent process */
       Pipe_PtoC.send(&Pipe_PtoC);
-//      Pipe_CtoP.receive(&Pipe_CtoP);
+      Pipe_CtoP.receive(&Pipe_CtoP);
       break;
   }
 

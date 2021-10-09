@@ -2,16 +2,33 @@
 #include "dp_pipe.h"
 #include "dp_string.h"
 #include <stdio.h>
+#include <string.h>
 #include <unistd.h>
 
 void p_snd(Pipe *self) {
   close(self->fd[0]);
   FILE *fin = fopen(self->fp_r, "r");
 
-  size_t last_sym = BUF_SZ;
-  while(last_sym == BUF_SZ) {
-    last_sym = fread(self->buf.data, sizeof(char), BUF_SZ, fin);
-    write(self->fd[1], self->buf.data, self->buf.len(&self->buf));
+  int i = 1;
+  size_t last_sym = BUF_SZ - 3;
+  int num_pcg = 0;
+  while(last_sym == BUF_SZ - 3) {
+    self->buf.data[0] = (char)(i++);
+    i %= 128;
+    self->buf.data[1] = '0';
+    self->buf.data[2] = '0';
+    last_sym = fread(self->buf.data+3, sizeof(char), BUF_SZ - 3, fin);
+    /* Max data size is 254 packages of 256 bytes.
+     * the first symbol in the data is the number of package (0-255),
+     * the second symbol is the number of packages (0-255),
+     * then the number of symbols in the last package. */
+    num_pcg = (int)(last_sym / PCG_SZ + 1);
+    self->buf.data[1] = (char)num_pcg;
+    self->buf.data[2] = 1;
+    if (last_sym % PCG_SZ != 0) {
+      self->buf.data[2] = (char)(last_sym % PCG_SZ + 1);
+    }
+    write(self->fd[1], self->buf.data, last_sym+3);
   }
 
   fclose(fin);
@@ -21,8 +38,19 @@ void p_rcv(Pipe *self) {
   close(self->fd[1]);
   FILE *fout = fopen(self->fp_w, "w");
 
+  int j, i = 1;
+  size_t length;
+  u_char num_pcg, num_l_pcg;
   while(read(self->fd[0], self->buf.data, BUF_SZ) > 0) {
-    fwrite(self->buf.data, sizeof(char), self->buf.len(&self->buf), fout);
+    j = (int)self->buf.data[0];
+    if (j == i) {
+      i++;
+      i %= 128;
+      num_pcg = (u_char)(self->buf.data[1] - 1);
+      num_l_pcg = (u_char)(self->buf.data[2] - 1);
+      length = num_pcg * PCG_SZ + num_l_pcg;
+      fwrite(self->buf.data+3, sizeof(char), length, fout);
+    }
   }
 
   fclose(fout);
