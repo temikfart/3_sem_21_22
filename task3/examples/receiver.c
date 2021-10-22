@@ -3,8 +3,7 @@
 #include <sys/msg.h>
 #include <stdio.h>
 
-#define MSG_SIZE     1024
-
+#define MSG_SIZE     1024 // < /proc/sys/fs/mqueue/msg_max 
 
 
 typedef struct msgbuf {
