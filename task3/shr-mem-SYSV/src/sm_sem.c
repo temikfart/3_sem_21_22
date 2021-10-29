@@ -1,12 +1,14 @@
 #include "sm_sem.h"
 
-static struct sembuf Init = {0, 0, 0};
-static struct sembuf P = {0, -1, 0};
-static struct sembuf V = {0, 1, 0};
+//struct sembuf Init = {0, 0, 0};
+//struct sembuf N = {0, 1, 0};
+//static struct sembuf P = {0, -1, 0};
+//static struct sembuf V = {0, 1, 0};
 
-int *MySemOpen(const char *path) {
+int *MySemOpen(const char *path, short sem_sz) {
   int *sem_id = NULL;
   key_t key;
+  struct sembuf sop;
   union semun {
     int val;
     struct semid_ds *buf;
@@ -21,11 +23,20 @@ int *MySemOpen(const char *path) {
   }
   sem_id = malloc(sizeof(int));
 
-  *sem_id = semget(key, 1, IPC_CREAT | 0666);
+  *sem_id = semget(key, 1, IPC_CREAT | 0777);
   if (*sem_id != -1) {
     Arg.val = 0;
     semctl(*sem_id, 0, SETVAL, Arg);
-    semop(*sem_id, &Init, 1);
+    sop.sem_num = 0;
+    sop.sem_op = 0;
+    sop.sem_flg = 0;
+    semop(*sem_id, &sop, 1);
+    if (sem_sz > 1) {
+      Arg.val = sem_sz;
+      semctl(*sem_id, 0, SETVAL, Arg);
+    }
+    int st = semctl(*sem_id, 1, GETVAL);
+    printf("(%d-%d) Created\n", *sem_id, st);
   } else {
     if (errno == EEXIST) {
       while (1) {
@@ -81,8 +92,16 @@ int MySemRemove(const char *path) {
   return 0;
 }
 int MySemPost(const int *sem_id) {
-  return semop(*sem_id, &P, 1);
+  struct sembuf V = {0, 1, 0};
+  semop(*sem_id, &V, 1);
+  int st = semctl(*sem_id, 1, GETVAL);
+  printf("(%d-%d) Unlocked\n", *sem_id, st);
+  return 0;
 }
 int MySemWait(const int *sem_id) {
-  return semop(*sem_id, &V, 1);
+  struct sembuf P = {0, -1, 0};
+  semop(*sem_id, &P, 1);
+  int st = semctl(*sem_id, 1, GETVAL);
+  printf("(%d-%d) Locked\n", *sem_id, st);
+  return 0;
 }

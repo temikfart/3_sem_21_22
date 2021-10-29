@@ -5,16 +5,26 @@
 #include <unistd.h>
 #include "sm_sem.h"
 
-/*
- * 1st byte -- letter count
- * 2nd byte -- number of packages
- * 3rd byte -- number of bytes in the last package
- */
-#define PROTOCOL_SZ 4
-#define PCG_SZ 128
-#define SHM_SZ (6 * PCG_SZ + PROTOCOL_SZ)
-#define BUF_SZ (SHM_SZ - PROTOCOL_SZ)
+#define INDEX_NUM 2
+#define SHM_SZ 32
+#define BUF_SZ (SHM_SZ - INDEX_NUM * sizeof(size_t))
 
+typedef struct Semaphores_id {
+  int *empty;
+  int *mutex;
+  int *full;
+} Semid;
+typedef struct SharedMemory {
+  char *ptr;
+  size_t *s_ind;
+  size_t *r_ind;
+  char *buf;
+} SharedMemory;
+
+SharedMemory *SharedMemoryInit(const char *path);
+Semid *SemaphoresInit(char *argv[]);
+void SemaphoreRemove(Semid *sem, char *argv[]);
+void SharedMemoryRemove(SharedMemory *Shmem);
 void *getaddr(const char *path, size_t shm_sz);
-void send(char *argv[]);
-void receive(char *argv[]);
+void send(char *argv[], SharedMemory *Shmem, Semid *sem);
+void receive(char *argv[], SharedMemory *Shmem, Semid *sem);
