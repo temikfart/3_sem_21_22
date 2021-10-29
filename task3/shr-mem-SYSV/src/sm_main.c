@@ -29,8 +29,10 @@ void send(char *argv[]) {
   // Get ptr to buffer
   char *shmptr = (char *)getaddr(argv[1], SHM_SZ);
 
-  int *semid = MySemOpen(argv[1]);
-  if (semid == NULL) {
+  int *semid_empty = MySemOpen(argv[0]);
+  int *semid_mutex = MySemOpen(argv[1]);
+  int *semid_full = MySemOpen(argv[2]);
+  if (semid_empty == NULL || semid_mutex == NULL || semid_full == NULL) {
     perror("MySemOpen error");
     exit(1);
   }
@@ -51,14 +53,15 @@ void send(char *argv[]) {
   char *snt_letter = shmptr + 3;
   while (read_sz == BUF_SZ) {
     // -----CRITICAL SECTION----- //
-    MySemWait(semid);
+    MySemWait(semid_empty);
+    MySemWait(semid_mutex);
 
     if (*snt_letter == *letter) {
       // Read data from fd
       read_sz = read(fin, shmptr+PROTOCOL_SZ, BUF_SZ);
 
       // Count size of data and letter number
-      (*letter)++; // TODO: may be overflow
+      (*letter)++;
       (*letter) = (char)((int)(*letter) % 128);
       if (read_sz == 0) {
         *pcg_n = 0;
@@ -75,21 +78,28 @@ void send(char *argv[]) {
         printf("Sent %ld\n", read_sz);
     }
 
-    MySemPost(semid);
+    MySemPost(semid_mutex);
+    MySemPost(semid_full);
     // -----------END------------ //
   }
 
   close(fin);
-  MySemClose(semid);
+  MySemClose(semid_empty);
+  MySemClose(semid_mutex);
+  MySemClose(semid_full);
+  MySemRemove(argv[0]);
   MySemRemove(argv[1]);
+  MySemRemove(argv[2]);
   shmdt(shmptr);
 }
 void receive(char *argv[]) {
   // Get ptr to buffer
   char *shmptr = (char *)getaddr(argv[1], SHM_SZ);
 
-  int *semid = MySemOpen(argv[1]);
-  if (semid == NULL) {
+  int *semid_empty = MySemOpen(argv[0]);
+  int *semid_mutex = MySemOpen(argv[1]);
+  int *semid_full = MySemOpen(argv[2]);
+  if (semid_empty == NULL || semid_mutex == NULL || semid_full == NULL) {
     perror("MySemOpen error");
     exit(1);
   }
@@ -114,7 +124,8 @@ void receive(char *argv[]) {
 
   while (1) {
     // -----CRITICAL SECTION----- //
-    MySemWait(semid);
+    MySemWait(semid_full);
+    MySemWait(semid_mutex);
 
     int size = (int)(*pcg_n) * PCG_SZ + (int)(*last_pcg_sz);
 //    printf("(%d) ", size);
@@ -156,15 +167,20 @@ void receive(char *argv[]) {
       printf("Received %ld\n", read_sz);
     }
 
-    MySemPost(semid);
+    MySemPost(semid_mutex);
+    MySemPost(semid_empty);
     // -----------END------------ //
   }
 
   close(fout);
-  MySemClose(semid);
+  MySemClose(semid_empty);
+  MySemClose(semid_mutex);
+  MySemClose(semid_full);
+  MySemRemove(argv[0]);
   MySemRemove(argv[1]);
+  MySemRemove(argv[2]);
   shmdt(shmptr);
-};
+}
 
 int main(int argc, char *argv[]) {
   if (argc != 3) {
