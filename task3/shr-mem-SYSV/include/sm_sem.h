@@ -11,11 +11,6 @@
 #include <errno.h>
 #include <sm_main.h>
 
-//extern struct sembuf Init;
-//extern struct sembuf N;
-//static struct sembuf P;
-//static struct sembuf V;
-
 // Return ptr to sem_id or NULL if error occurred
 int *MySemOpen(const char *path, short sem_sz);     // Opening semaphore
 // Return 0 if successful or -1 otherwise

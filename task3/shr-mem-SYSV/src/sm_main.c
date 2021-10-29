@@ -16,7 +16,7 @@ Semid *SemaphoresInit(char *argv[]) {
   Semid *sem = malloc(sizeof(Semid));
   sem->empty = MySemOpen(argv[0], BUF_SZ);
   sem->mutex = MySemOpen(argv[1], 1);
-  sem->full = MySemOpen(argv[2], 1);
+  sem->full = MySemOpen(argv[2], 0);
 
   printf("empty=%d mutex=%d full=%d\n",
          *(sem->empty), *(sem->mutex), *(sem->full));
@@ -81,11 +81,12 @@ void send(char *argv[], SharedMemory *Shmem, Semid *sem) {
   while (read_sz != 0) {
     // -----CRITICAL SECTION----- //
     MySemWait(sem->empty);
-    printf("Sending.\n");
+//    printf("Sending.\n");
     MySemWait(sem->mutex);
     printf("Sending..\n");
 
     if ((*snd_pos) != (*rcv_pos) - 1) {
+      printf("(S)\t(%02ld-%02ld) --> ", *rcv_pos, *snd_pos);
       // Read data from fd and write in shared memory
       read_sz = read(fin, (Shmem->buf) + (*snd_pos), 1);
       if (read_sz == 0) {
@@ -93,6 +94,7 @@ void send(char *argv[], SharedMemory *Shmem, Semid *sem) {
       }
       // Count index
       *snd_pos = ((*snd_pos) + read_sz) % BUF_SZ;
+      printf("(%02ld-%02ld)\n\n", *rcv_pos, *snd_pos);
     }
 
     MySemPost(sem->mutex);
@@ -116,24 +118,29 @@ void receive(char *argv[], SharedMemory *Shmem, Semid *sem) {
   size_t read_sz = 1;
   size_t written_sz = BUF_SZ;
   int flag = 1;
+  int additional = 1;
   while (flag) {
     // -----CRITICAL SECTION----- //
     MySemWait(sem->full);
-    printf("Receiving.\n");
+//    printf("Receiving.\n");
     MySemWait(sem->mutex);
     printf("Receiving..\n");
 
+    if (additional == 0 && (*rcv_pos) == (*snd_pos)) {
+      flag = 0;
+    }
+    additional = 0;
     if ((*rcv_pos) != (*snd_pos) - 1) {
+      printf("(R)\t(%02ld-%02ld) --> ", *rcv_pos, *snd_pos);
+      *rcv_pos = ((*rcv_pos) + read_sz) % BUF_SZ;
       // Read data from shared memory and write in file
       written_sz = write(fout, Shmem->buf, read_sz);
       if (written_sz == 0) {
         printf("Bad writing in file\n");
         exit(1);
       }
+      printf("(%02ld-%02ld)\n\n", *rcv_pos, *snd_pos);
       // Count index
-      *rcv_pos = ((*rcv_pos) + read_sz) % BUF_SZ;
-    } else {
-      flag = 0;
     }
 
     MySemPost(sem->mutex);
@@ -167,8 +174,8 @@ int main(int argc, char *argv[]) {
     receive(argv, Shmem, sem);
   }
 
-  SemaphoreRemove(sem, argv);
-  SharedMemoryRemove(Shmem);
+//  SemaphoreRemove(sem, argv);
+//  SharedMemoryRemove(Shmem);
 
   return 0;
 }

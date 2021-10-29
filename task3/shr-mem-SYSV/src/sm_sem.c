@@ -1,19 +1,15 @@
 #include "sm_sem.h"
 
-//struct sembuf Init = {0, 0, 0};
-//struct sembuf N = {0, 1, 0};
-//static struct sembuf P = {0, -1, 0};
-//static struct sembuf V = {0, 1, 0};
+static union semun {
+  int val;
+  struct semid_ds *buf;
+  unsigned short *array;
+} Arg;
 
 int *MySemOpen(const char *path, short sem_sz) {
   int *sem_id = NULL;
   key_t key;
   struct sembuf sop;
-  union semun {
-    int val;
-    struct semid_ds *buf;
-    unsigned short *array;
-  } Arg;
 
   (void)close(open(path, O_WRONLY | O_CREAT, 0));
   key = ftok(path, 1);
@@ -31,12 +27,12 @@ int *MySemOpen(const char *path, short sem_sz) {
     sop.sem_op = 0;
     sop.sem_flg = 0;
     semop(*sem_id, &sop, 1);
-    if (sem_sz > 1) {
-      Arg.val = sem_sz;
-      semctl(*sem_id, 0, SETVAL, Arg);
-    }
-    int st = semctl(*sem_id, 1, GETVAL);
+
+    Arg.val = sem_sz;
+    semctl(*sem_id, 0, SETVAL, Arg);
+    int st = semctl(*sem_id, 0, GETVAL);
     printf("(%d-%d) Created\n", *sem_id, st);
+
   } else {
     if (errno == EEXIST) {
       while (1) {
@@ -92,16 +88,30 @@ int MySemRemove(const char *path) {
   return 0;
 }
 int MySemPost(const int *sem_id) {
+  int st = semctl(*sem_id, 0, GETVAL);
+  printf("(%d)\t%02d --> ", *sem_id, st);
+
+  Arg.val = st + 1;
+//  semctl(*sem_id, 0, SETVAL, Arg);
   struct sembuf V = {0, 1, 0};
   semop(*sem_id, &V, 1);
-  int st = semctl(*sem_id, 1, GETVAL);
-  printf("(%d-%d) Unlocked\n", *sem_id, st);
+
+  st = semctl(*sem_id, 0, GETVAL);
+  printf("%02d\n", st);
+
   return 0;
 }
 int MySemWait(const int *sem_id) {
+  int st = semctl(*sem_id, 0, GETVAL);
+  printf("(%d)\t%02d --> ", *sem_id, st);
+
+  Arg.val = st - 1;
+//  semctl(*sem_id, 0, SETVAL, Arg);
   struct sembuf P = {0, -1, 0};
   semop(*sem_id, &P, 1);
-  int st = semctl(*sem_id, 1, GETVAL);
-  printf("(%d-%d) Locked\n", *sem_id, st);
+
+  st = semctl(*sem_id, 0, GETVAL);
+  printf("%02d\n", st);
+
   return 0;
 }
