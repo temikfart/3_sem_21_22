@@ -5,5 +5,7 @@ set(CMAKE_C_STANDARD 11)
 
 add_executable(shr-mem
         src/sm_main.c
-        include/sm_main.h)
+        src/sm_sem.c
+        include/sm_main.h
+        include/sm_sem.h)
 include_directories(include)
