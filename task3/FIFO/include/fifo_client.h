@@ -20,5 +20,5 @@ struct simple_message {
 };
 
 int MakeFifoName(pid_t pid, char *name, size_t name_max);
-int Openfd(const char *path, int flag);
-ssize_t Read(int fd, void *buf, size_t nbytes);
+int Open(const char *path, int flag);
+void Read(int fd, void *buf, size_t nbytes);

@@ -12,7 +12,7 @@ int Open(const char *path, int flag) {
   }
   return fd;
 }
-ssize_t Read(int fd, void *buf, size_t nbytes) {
+void Read(int fd, void *buf, size_t nbytes) {
   ssize_t nread = read(fd, buf, nbytes);
   if (nread == -1) {
     perror("read error");
@@ -22,7 +22,6 @@ ssize_t Read(int fd, void *buf, size_t nbytes) {
     printf("Network down\n");
     exit(1);
   }
-  return nread;
 }
 
 int main() {
@@ -40,28 +39,23 @@ int main() {
 
   // Receiving and processing msgs
   int fd_client;
-  ssize_t nread;
   struct simple_message msg;
   char fifo_name[100];
+  // Receiving msg
+  Read(fd_server, &msg, sizeof(msg));
+  printf("Msg received. Processing..\n");
 
-  setlocale(LC_ALL, "");
-  while(1) {
-    // Receiving msg
-    nread = Read(fd_server, &msg, sizeof(msg));
-    printf("Msg received. Processing..\n");
+  // Processing
+  int fin = Open(msg.sm_data, O_WRONLY);
+  printf("Successful. Server is starting to send data from the file\n");
+  close(fin);
 
-    // Processing
-    for (int i = 0; msg.sm_data[i] != '\0'; i++) {
-      msg.sm_data[i] = (char)toupper(msg.sm_data[i]);
-    }
+  // Sending results of processing
+  MakeFifoName(msg.sm_clientpid, fifo_name, sizeof(fifo_name));
 
-    // Sending results of processing
-    MakeFifoName(msg.sm_clientpid, fifo_name, sizeof(fifo_name));
-
-    fd_client = Open(fifo_name, O_WRONLY);
-    write(fd_client, &msg, sizeof(msg));
-    close(fd_client);
-  }
+  fd_client = Open(fifo_name, O_WRONLY);
+  write(fd_client, &msg, sizeof(msg));
+  close(fd_client);
 
   close(fd_server);
 
