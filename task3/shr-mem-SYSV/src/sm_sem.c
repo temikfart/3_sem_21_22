@@ -30,9 +30,6 @@ int *MySemOpen(const char *path, short sem_sz) {
 
     Arg.val = sem_sz;
     semctl(*sem_id, 0, SETVAL, Arg);
-    int st = semctl(*sem_id, 0, GETVAL);
-    printf("(%d-%d) Created\n", *sem_id, st);
-
   } else {
     if (errno == EEXIST) {
       while (1) {
@@ -88,30 +85,14 @@ int MySemRemove(const char *path) {
   return 0;
 }
 int MySemPost(const int *sem_id) {
-  int st = semctl(*sem_id, 0, GETVAL);
-  printf("(%d)\t%02d --> ", *sem_id, st);
-
-  Arg.val = st + 1;
-//  semctl(*sem_id, 0, SETVAL, Arg);
   struct sembuf V = {0, 1, 0};
   semop(*sem_id, &V, 1);
-
-  st = semctl(*sem_id, 0, GETVAL);
-  printf("%02d\n", st);
 
   return 0;
 }
 int MySemWait(const int *sem_id) {
-  int st = semctl(*sem_id, 0, GETVAL);
-  printf("(%d)\t%02d --> ", *sem_id, st);
-
-  Arg.val = st - 1;
-//  semctl(*sem_id, 0, SETVAL, Arg);
   struct sembuf P = {0, -1, 0};
   semop(*sem_id, &P, 1);
-
-  st = semctl(*sem_id, 0, GETVAL);
-  printf("%02d\n", st);
 
   return 0;
 }
