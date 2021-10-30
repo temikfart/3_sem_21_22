@@ -5,6 +5,8 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <sys/ipc.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 #include <sys/msg.h>
 #include <string.h>
 
@@ -16,3 +18,7 @@ typedef struct msg {
   long mtype;
   char mtext[MSG_TEXT_SZ];
 } Message;
+
+int getmsgid(const char *path);
+void send(int msgid, char *argv[]);
+void receive(int msgid, char *argv[]);
