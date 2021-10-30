@@ -84,6 +84,7 @@ int MySemRemove(const char *path) {
   }
   return 0;
 }
+
 int MySemPost(const int *sem_id) {
   struct sembuf V = {0, 1, 0};
   semop(*sem_id, &V, 1);

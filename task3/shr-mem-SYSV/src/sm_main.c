@@ -1,24 +1,5 @@
 #include "sm_main.h"
 
-SharedMemory *SharedMemoryInit(const char *path) {
-  SharedMemory *Shmem = malloc(sizeof(SharedMemory));
-  Shmem->ptr = (char *)getaddr(path, SHM_SZ);
-
-  Shmem->status = (typeof(Shmem->status))(Shmem->ptr);
-  *(Shmem->status) = 1;
-
-  Shmem->s_ind = (typeof(Shmem->s_ind))
-          (Shmem->status + sizeof(typeof(Shmem->s_ind)));
-  *(Shmem->s_ind) = 0;
-
-  Shmem->r_ind = (typeof(Shmem->s_ind))
-          (Shmem->s_ind + sizeof(typeof(Shmem->r_ind)));
-  *(Shmem->r_ind) = 0;
-
-  Shmem->buf = Shmem->ptr + INDEX_NUM * sizeof(typeof(Shmem->status));
-
-  return Shmem;
-}
 Semid *SemaphoresInit(char *argv[]) {
   Semid *sem = malloc(sizeof(Semid));
   sem->empty = MySemOpen(argv[0], BUF_SZ);
@@ -43,10 +24,6 @@ void SemaphoreRemove(Semid *sem, char *argv[]) {
   MySemRemove(argv[2]);
   free(sem);
 }
-void SharedMemoryRemove(SharedMemory *Shmem) {
-  shmdt(Shmem->ptr);
-  free(Shmem);
-}
 
 void *getaddr(const char *path, size_t shm_sz) {
   key_t key = ftok(path, 1);
@@ -70,6 +47,29 @@ void *getaddr(const char *path, size_t shm_sz) {
 
   return shmptr;
 }
+SharedMemory *SharedMemoryInit(const char *path) {
+  SharedMemory *Shmem = malloc(sizeof(SharedMemory));
+  Shmem->ptr = (char *)getaddr(path, SHM_SZ);
+
+  Shmem->status = (typeof(Shmem->status))(Shmem->ptr);
+  *(Shmem->status) = 1;
+
+  Shmem->s_ind = (typeof(Shmem->s_ind))
+          (Shmem->status + sizeof(typeof(Shmem->s_ind)));
+  *(Shmem->s_ind) = 0;
+
+  Shmem->r_ind = (typeof(Shmem->s_ind))
+          (Shmem->s_ind + sizeof(typeof(Shmem->r_ind)));
+  *(Shmem->r_ind) = 0;
+
+  Shmem->buf = Shmem->ptr + INDEX_NUM * sizeof(typeof(Shmem->status));
+
+  return Shmem;
+}
+void SharedMemoryRemove(SharedMemory *Shmem) {
+  shmdt(Shmem->ptr);
+  free(Shmem);
+}
 
 void send(char *argv[], SharedMemory *Shmem, Semid *sem) {
   // Get file descriptor
@@ -89,18 +89,20 @@ void send(char *argv[], SharedMemory *Shmem, Semid *sem) {
 
     // Read data from fd and write in shared memory
     read_sz = read(fin, (Shmem->buf) + (*snd_pos), 1);
+
     if (read_sz == 0) {
       *status = 0;
       printf("Sender: EOF!\n");
     } else {
       // Count index
-      *snd_pos = ((*snd_pos) + read_sz) % BUF_SZ;
+      *snd_pos = ((*snd_pos) + read_sz) % (size_t)(BUF_SZ);
     }
 
     MySemPost(sem->mutex);
     MySemPost(sem->full);
     // -----------END------------ //
   }
+  while (*status == 0);
 
   close(fin);
 }
@@ -127,6 +129,7 @@ void receive(char *argv[], SharedMemory *Shmem, Semid *sem) {
       MySemPost(sem->empty);
       break;
     }
+
     // Read data from shared memory and write in file
     written_sz = write(fout, Shmem->buf+(*rcv_pos), 1);
     if (written_sz == 0) {
@@ -140,6 +143,7 @@ void receive(char *argv[], SharedMemory *Shmem, Semid *sem) {
     MySemPost(sem->empty);
     // -----------END------------ //
   }
+  *status = 1;
   printf("Receiver: EOF!\n");
 
   close(fout);
