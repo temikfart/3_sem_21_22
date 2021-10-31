@@ -1,7 +1,9 @@
 #include "fifo_server.h"
 
+char fifo_name[100] = "\0";
+
 int MakeFifoName(pid_t pid, char *name, size_t name_max) {
-  snprintf(name, name_max, "fifo%d", pid);
+  snprintf(name, name_max, "%sfifo%d", CHANNELS_REL_PATH, pid);
   return 0;
 }
 int Open(const char *path, int flag) {
@@ -23,6 +25,24 @@ void Read(int fd, void *buf, size_t nbytes) {
     exit(1);
   }
 }
+int GetStarted(int fd_server, struct simple_message *msg) {
+  // Receiving and processing msgs
+  int fd_client;
+  // Receiving msg
+  Read(fd_server, msg, sizeof(*msg));
+  printf("Msg received: %s\nProcessing..\n", msg->sm_data);
+
+  // Sending results of processing
+  MakeFifoName(msg->sm_clientpid, fifo_name, sizeof(fifo_name));
+  printf("fifo_name: %s\n", fifo_name);
+
+  struct simple_message ready_msg;
+  fd_client = Open(fifo_name, O_WRONLY);
+  strcpy(ready_msg.sm_data, READY_MSG);
+  write(fd_client, &ready_msg, sizeof(ready_msg));
+
+  return fd_client;
+}
 
 int main() {
   printf("Server is running\n");
@@ -37,27 +57,49 @@ int main() {
   // Additional fd: to be running always
   fd_server_w = Open(SERVER_FIFO_NAME, O_WRONLY);
 
-  // Receiving and processing msgs
-  int fd_client;
+  // Make connection
   struct simple_message msg;
-  char fifo_name[100];
-  // Receiving msg
-  Read(fd_server, &msg, sizeof(msg));
-  printf("Msg received. Processing..\n");
+  int fd_client = GetStarted(fd_server, &msg);
 
-  // Processing
-  int fin = Open(msg.sm_data, O_WRONLY);
-  printf("Successful. Server is starting to send data from the file\n");
+  // Start upload file
+//  int fin = Open(msg.sm_data, O_RDONLY);
+  printf("Try to open source file..\n");
+  int fin = Open(msg.sm_data, O_RDONLY);
+  printf("Server is starting to send data from the file\n");
+
+  size_t read_sz;
+  int i = 1;
+  while (1) {
+    // Read data from file and write in msg
+    read_sz = read(fin, msg.sm_data+PROT_SZ, MAX_READ_SZ);
+
+    if (read_sz != MAX_READ_SZ) {
+      if (read_sz != 0) {
+        // Send last msg
+        msg.sm_data[0] = (char)read_sz;
+        write(fd_client, msg.sm_data, read_sz + PROT_SZ);
+//        printf("Server sent %d msg with %d(%ld) symbols: %s\n",
+//               i++, msg.sm_data[0], read_sz, msg.sm_data+PROT_SZ);
+      }
+      // End of sending
+      printf("Server: EOF!\n");
+
+      break;
+    } else {
+      // Msg sending
+      msg.sm_data[0] = (char)read_sz;
+      write(fd_client, msg.sm_data, read_sz + PROT_SZ);
+//      printf("Server sent %d msg with %d(%ld) symbols: %s\n",
+//             i++, msg.sm_data[0], read_sz, msg.sm_data+PROT_SZ);
+    }
+  }
+
   close(fin);
 
-  // Sending results of processing
-  MakeFifoName(msg.sm_clientpid, fifo_name, sizeof(fifo_name));
-
-  fd_client = Open(fifo_name, O_WRONLY);
-  write(fd_client, &msg, sizeof(msg));
   close(fd_client);
-
   close(fd_server);
+
+  printf("Server finished work.\n");
 
   return 0;
 }
