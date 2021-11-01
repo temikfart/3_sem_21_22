@@ -3,8 +3,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <pthread.h>
 
 #define POINTS_NUM 10
+#define THREADS_NUM 4
 
 typedef struct Point {
   double x;
@@ -16,6 +18,12 @@ typedef struct Interval {
   double b;
 } Interval;
 
+typedef struct pthread_args {
+  Point *Points;
+  long N;
+  Interval Interval;
+} Arg;
+
 Interval ScanInterval();
-void GeneratePoints(Point *Points, Interval Interval);
+void *GeneratePoints(void *Args);
 //void SendViaShMem();
