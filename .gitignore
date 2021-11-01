@@ -1,9 +1,5 @@
 a.out
 .idea
-/task1/shell-wrapper/cmake-build-debug
-/task2/duplex-pipe/cmake-build-debug
-/task3/shr-mem-SYSV/cmake-build-debug
-/task3/msg-queue-SYSV/cmake-build-debug
-/task3/FIFO/cmake-build-debug
+cmake-build-debug
 src.txt
 dst.txt
