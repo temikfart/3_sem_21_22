@@ -2,11 +2,23 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <time.h>
-#include <pthread.h>
 
-#define POINTS_NUM 10
-#define THREADS_NUM 4
+#include <sys/types.h>
+#include <sys/ipc.h>
+#include <sys/shm.h>
+
+#include <fcntl.h>
+#include <math.h>
+#include <pthread.h>
+#include <semaphore.h>
+#include <time.h>
+#include <unistd.h>
+
+#define POINTS_NUM 1000000
+#define THREADS_NUM 1
+#define SHMEM_SZ 2
+
+static pthread_mutex_t pmutex;
 
 typedef struct Point {
   double x;
@@ -19,11 +31,13 @@ typedef struct Interval {
 } Interval;
 
 typedef struct pthread_args {
-  Point *Points;
+  int *shm;
   long N;
   Interval Interval;
 } Arg;
 
-Interval ScanInterval();
+double function(double x);
 void *GeneratePoints(void *Args);
-//void SendViaShMem();
+void *getaddr(const char *path, size_t shm_sz);
+void Send(int *shm, Interval Interval);
+void Receive(int *shm, Interval Interval);
