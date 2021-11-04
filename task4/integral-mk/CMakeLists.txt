@@ -3,7 +3,7 @@ project(integrate-with-mk)
 
 set(CMAKE_C_STANDARD 11)
 
-set(CMAKE_C_FLAGS "-pthread")
+set(CMAKE_C_FLAGS "-pthread -O0")
 add_definitions("-pthread")
 
 include_directories(include)

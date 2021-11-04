@@ -14,8 +14,8 @@
 #include <time.h>
 #include <unistd.h>
 
-#define POINTS_NUM 1000000
-#define THREADS_NUM 1
+#define POINTS_NUM 100000000
+#define THREADS_NUM 100
 #define SHMEM_SZ 2
 
 static pthread_mutex_t pmutex;

@@ -13,15 +13,18 @@ void *GeneratePoints(void *Args) {
   int s;
 
   /* Set seed to random generator */
-  u_int now = time(NULL) + (u_int)rand();
-  srand(now);
+//  u_int now = time(NULL) + (u_int)rand_r();
+  u_int id = pthread_self();
+  srand(id);
 
   /* Generate points into the array Points */
   for (int i = 0; i < A->N; i++) {
     /* Generating point into the [a,b]^2 */
-    New_point.x = (double)rand() / (RAND_MAX)
+//    New_point.x = i;
+//    New_point.y = i;
+    New_point.x = (double)rand_r(&id) / (RAND_MAX)
                   * range + A->Interval.a;               // x in [a,b]
-    New_point.y = (double)rand() / (RAND_MAX)
+    New_point.y = (double)rand_r(&id) / (RAND_MAX)
                   * A->Interval.b;                       // y in [0,b]
 
     /* Does the point (x;y) belong to the area
