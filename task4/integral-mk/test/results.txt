@@ -1,0 +1,64 @@
+Threads: 1; #Points: 100000000.
+
+	t_m=1.60944
+
+Threads: 2; #Points: 100000000.
+
+	t_m=0.81346
+
+Threads: 3; #Points: 100000000.
+
+	t_m=0.56639
+
+Threads: 4; #Points: 100000000.
+
+	t_m=0.53346
+
+Threads: 5; #Points: 100000000.
+
+	t_m=0.45079
+
+Threads: 6; #Points: 100000000.
+
+	t_m=0.40336
+
+Threads: 7; #Points: 100000000.
+
+	t_m=0.32857
+
+Threads: 8; #Points: 100000000.
+
+	t_m=0.39049
+
+Threads: 9; #Points: 100000000.
+
+	t_m=0.39058
+
+Threads: 10; #Points: 100000000.
+
+	t_m=0.36492
+
+Threads: 11; #Points: 100000000.
+
+	t_m=0.34406
+
+Threads: 12; #Points: 100000000.
+
+	t_m=0.36678
+
+Threads: 13; #Points: 100000000.
+
+	t_m=0.34007
+
+Threads: 14; #Points: 100000000.
+
+	t_m=0.35273
+
+Threads: 15; #Points: 100000000.
+
+	t_m=0.34789
+
+Threads: 16; #Points: 100000000.
+
+	t_m=0.32795
+

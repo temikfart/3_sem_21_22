@@ -2,6 +2,14 @@
 
 static pthread_mutex_t pmutex = PTHREAD_MUTEX_INITIALIZER;
 
+int double_cmp(const void *a, const void *b) {
+  if (*(double*)a > *(double*)b)
+    return 1;
+  else if (*(double*)a < *(double*)b)
+    return -1;
+  else
+    return 0;
+}
 double function(double x) {
   return sqrt(x);
 }
@@ -13,15 +21,12 @@ void *GeneratePoints(void *Args) {
   int s;
 
   /* Set seed to random generator */
-//  u_int now = time(NULL) + (u_int)rand_r();
-  u_int id = pthread_self();
+  u_int id = time(NULL) + pthread_self();
   srand(id);
 
   /* Generate points into the array Points */
   for (int i = 0; i < A->N; i++) {
     /* Generating point into the [a,b]^2 */
-//    New_point.x = i;
-//    New_point.y = i;
     New_point.x = (double)rand_r(&id) / (RAND_MAX)
                   * range + A->Interval.a;               // x in [a,b]
     New_point.y = (double)rand_r(&id) / (RAND_MAX)
@@ -109,29 +114,76 @@ void Receive(int *shm, Interval Interval) {
 }
 
 int main(int argc, char *argv[]) {
+  /* Open file to writing time of execution */
+  char path[] = "../test/results.txt";
+  FILE *fin = fopen(path, "a");
+
   /* Get interval for integral */
   Interval Interval;
   Interval.a = 0;
   Interval.b = 1; // Wait I = 0,(6) as result
 
-  /* Creating Sheared Memory */
-  int *shmptr = (int *)getaddr(argv[0], SHMEM_SZ * sizeof(int));
-  shmptr[0] = 0;  // Status
-  shmptr[1] = 0;  // Number of points, which
-                  // placed under the graph
+  /* Array for exec times */
+  double tests_time[TEST_NUM];
 
-  /* Making two processes for sending points and processing of results */
-  pid_t pid = fork();
-  if (pid < 0) {
-    perror("fork error");
-    exit(1);
+  /* Write into the file info about current tests */
+  char s_num[100];
+  sprintf(s_num, "Threads: %d; #Points: %d.\n",
+          THREADS_NUM, POINTS_NUM);
+  write(fileno(fin), s_num, strlen(s_num));
+
+  /* Start clock */
+  struct timespec start, stop;
+
+  for (int i = 0; i < TEST_NUM; i++) {
+    clock_gettime(CLOCK_MONOTONIC, &start);
+
+    /* Creating Sheared Memory */
+    int *shmptr = (int *)getaddr(argv[0], SHMEM_SZ * sizeof(int));
+    shmptr[0] = 0;  // Status
+    shmptr[1] = 0;  // Number of points, which
+                    // placed under the graph
+
+    /* Making two processes for sending points and processing of results */
+    pid_t pid = fork();
+    if (pid < 0) {
+      perror("fork error");
+      exit(1);
+    }
+
+    if (pid == 0) {
+      Send(shmptr, Interval);
+      fclose(fin);
+      return 0;
+    } else {
+      Receive(shmptr, Interval);
+
+      /* End clock */
+      clock_gettime(CLOCK_MONOTONIC, &stop);
+      double sec = (double)(stop.tv_sec - start.tv_sec);
+      double nsec = (double)(stop.tv_nsec - start.tv_nsec);
+      nsec /= (double)(BILLION);
+
+      double exec_time = sec + nsec;
+      tests_time[i] = exec_time;
+
+      /* write results into the file */
+      char res[100];
+      sprintf(res, "\treal=%.5f\n", exec_time);
+//      write(fileno(fin), res, strlen(res));
+    }
   }
 
-  if (pid == 0) {
-    Send(shmptr, Interval);
-  } else {
-    Receive(shmptr, Interval);
-  }
+  /* Find a median of exec times */
+  qsort(tests_time, TEST_NUM, sizeof(double), double_cmp);
+
+  /* Write median time into the file */
+  char s_med[100];
+  int m = TEST_NUM / 2 - !(TEST_NUM % 2);
+  sprintf(s_med, "\n\tt_m=%.5f\n\n", tests_time[m]);
+  write(fileno(fin), s_med, strlen(s_med));
+
+  fclose(fin);
 
   return 0;
 }
