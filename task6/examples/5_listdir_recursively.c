@@ -1,4 +1,4 @@
-/* Программа рекурсивно распечатывает полные пути к директориям и регулярным файлам, начиная с текущей директории. Данный пример немного отличается от рассмотренного на семинаре, однако смысл один и тот же */
+/* Программа рекурсивно распечатывает полные пути к директориям и регулярным файлам, начиная с текущей директории. */
 
 #include <stdio.h>
 #include <sys/stat.h>
@@ -21,7 +21,7 @@ void SearchDirectory(const char *name) {
             
             if (!stat(Path, &info)) {         //stat returns zero on success.
                 if (S_ISDIR(info.st_mode)) {  //Are we dealing with a directory?
-                    if (!strcmp(e -> d_name,".." ) || !strcmp(e -> d_name,"." )) //Ignore if it is the same of level above directory
+                    if (!strcmp(e -> d_name,".." ) || !strcmp(e -> d_name,"." )) //Ignore if it is the same or level above directory
                         continue;
                     //Make corresponding directory in the target folder here.
                     printf("directory: %s/\n", Path);
