@@ -2,6 +2,7 @@
 
 //static const char* path_prefix =
 //        "/home/temikfart/Desktop/CT/3_sem_21_22/task6/sys-service/";
+static int log_fd;
 
 void print_instruction(const char* cmd) {
   printf("Usage: %s [PID] [OPTIONS]\n", cmd);
@@ -55,8 +56,8 @@ char* get_time() {
 
   return time_mark;
 }
-void create_log(int log_fd, const char* format, ...) {
-  char* log = (char*)(calloc(LOG_LEN, sizeof(char)));
+void create_log(const char* format, ...) {
+  char* log = (char*)(calloc(PATH_LEN, sizeof(char)));
   char* time_mark = get_time();
 
   strcat(log, time_mark);
@@ -79,9 +80,9 @@ int preparing() {     // TODO: in the next features, accept Config arg.
 //  char* log_path = strdup(path_prefix);
 //  log_path = strcat(log_path, "log/log.txt");
   const char log_path[] = "../log/log.txt";
-  int log_fd = open(log_path,
-                    O_CREAT | O_RDWR | O_APPEND,
-                    S_IRUSR | S_IWUSR);
+  log_fd = open(log_path,
+                O_CREAT | O_RDWR | O_APPEND,
+                S_IRUSR | S_IWUSR);
   if (log_fd == -1) {
     printf("Can't open %s\n", log_path);
     perror("Can't open log.txt");
@@ -89,50 +90,49 @@ int preparing() {     // TODO: in the next features, accept Config arg.
   }
 
   // ----- Start preparing -----
-  create_log(log_fd, "Start preparing");
+  create_log("Start preparing");
 
   // ----- Closing fds -----
-  create_log(log_fd, "Closing file descriptors..");
+  create_log("Closing file descriptors..");
   if (close(fileno(stdin)) == -1
       || close(fileno(stdout)) == -1
       || close(fileno(stderr)) == -1) {
     // Closing file descriptors fail
-    create_log(log_fd, "FAIL: %s", strerror(errno));
+    create_log("FAIL: %s", strerror(errno));
     return -1;
   } else {
     // Closing file descriptors succeed
-    create_log(log_fd, "SUCCEED");
+    create_log("SUCCEED");
   }
 
   // ----- Create new session -----
-  create_log(log_fd, "Creating new session..");
+  create_log("Creating new session..");
   pid_t sid = setsid();
   if (sid == -1) {
     // Create new session fail
-    create_log(log_fd, "FAIL: %s", strerror(errno));
+    create_log("FAIL: %s", strerror(errno));
     return -1;
   } else {
     // Create new session succeed
-    create_log(log_fd, "SUCCEED: session id is %ld", sid);
+    create_log("SUCCEED: session id is %ld", sid);
   }
 
   // ----- Set the file creation permissions -----
-  create_log(log_fd, "Set the file creation permissions..");
+  create_log("Set the file creation permissions..");
   umask(0);
-  create_log(log_fd, "SUCCEED: Perms: %04o", MAX_PERMS);
+  create_log("SUCCEED: Perms: %04o", MAX_PERMS);
 
   // ----- Change current directory -----
-  create_log(log_fd, "Changing current directory..");
+  create_log("Changing current directory..");
   if (chdir("/") == -1) {
     // Changing current directory fail
-    create_log(log_fd, "FAIL: %s", strerror(errno));
+    create_log("FAIL: %s", strerror(errno));
   }
-  create_log(log_fd, "SUCCEED: current directory is \"/\"");
+  create_log("SUCCEED: current directory is \"/\"");
 
   // ----- COMPLETED -----
-  create_log(log_fd, "Preparing is completed successfully\n");
+  create_log("Preparing is completed successfully\n");
 
-  close(log_fd);
   return 0;
 }
 void configure_service(Config* Conf) {
@@ -145,6 +145,116 @@ void configure_service(Config* Conf) {
     exit(1);
   }
 }
+void print_parsed_maps_line(MapsLine* PML) {
+  create_log("Line: \"%s %s %s %s %s %s\"",
+             PML->address, PML->perms, PML->offset,
+             PML->device, PML->inode, PML->path);
+}
+MapsLine parse_maps_line(char* line) {
+  MapsLine PML = {NULL, NULL, NULL, NULL, NULL, NULL};
+  
+  int i = 1;
+  char delim[] = " \n";
+  for(char* p = strtok(line, delim);
+      p != NULL;
+      p = strtok(NULL, delim), i++) {
+    switch(i) {
+      case 1:
+        PML.address = strdup(p);
+        break;
+      case 2:
+        PML.perms = strdup(p);
+        break;
+      case 3:
+        PML.offset = strdup(p);
+        break;
+      case 4:
+        PML.device = strdup(p);
+        break;
+      case 5:
+        PML.inode = strdup(p);
+        break;
+      case 6:
+        PML.path = strdup(p);
+        break;
+      default:    // TODO: return some incorrect PML like -1.
+        create_log("Parsing maps line: FAIL");
+        break;
+    }
+  }
+  
+  return PML;
+}
+int parse_maps(FILE* maps_file, MapsLine* PML) {
+  create_log("Parsing maps file started");
+  
+  char* buf = NULL;
+  size_t len = 0;
+  ssize_t read_sz;
+  
+  size_t PML_sz = 0;
+  int count = 0;
+  
+  while((read_sz = getline(&buf, &len, maps_file)) != -1) {
+    create_log("Retrieved line of length %zu", read_sz);
+    
+    // TODO: Retrieving lines into array
+    PML_sz += sizeof(MapsLine);
+    PML = realloc(PML, PML_sz);
+    PML[count] = parse_maps_line(buf);
+    
+//    if() {
+//      create_log("Parsing of line #%d: FAIL", (count + 1));
+//      return -1;
+//    }
+  
+    create_log("Parsing maps line: SUCCEED");
+    print_parsed_maps_line(&PML[count]);
+    count++;
+  }
+  
+  free(buf);
+  return count;
+}
+int start_service(pid_t tr_pid) {
+  // ----- STARTING SERVICE -----
+  create_log("Starting service..");
+  
+  create_log("Tracking pid: %d", tr_pid);
+  char maps_path[PATH_LEN] = "/proc/";
+  char tr_pid_dir[PATH_LEN];
+  
+  sprintf(tr_pid_dir, "%d", tr_pid);
+  strcat(maps_path, tr_pid_dir);
+  strcat(maps_path, "/maps");
+  
+  create_log("Opening \"%s\"..", maps_path);
+  FILE* maps_file = fopen(maps_path, "r");
+  if (maps_file == NULL) {
+    create_log("FAIL: Can't open %s: %s\n", maps_path, strerror(errno));
+    return -1;
+  } else {
+    create_log("SUCCEED");
+  }
+  
+  create_log("Parsing maps file..");
+  // Parse /proc/${PID}/maps for the first time
+  MapsLine* ParsedMapsLines = NULL;
+  int lines_count = parse_maps(maps_file, ParsedMapsLines);
+  if (lines_count == -1) {
+    // Parsing maps' lines fail
+    create_log("Parsing maps file: FAIL");
+    return -1;
+  } else {
+    create_log("Parsing maps file is completed. "
+               "There are %d lines\n\n", lines_count);
+  }
+  
+  
+//  fclose(maps_file);
+//  create_log("SUCCEED: Service started!");
+  return 0;
+}
 
 int main(int argc, const char* argv[]) {
   Config Conf = parse_console_args(argc, argv);
@@ -153,6 +263,10 @@ int main(int argc, const char* argv[]) {
   scanf("%d", &Conf.pid);
 
   configure_service(&Conf);
+  
+  if (Conf.options == 0) {    // Interactive mode
+    start_service(Conf.pid);
+  }
 
   return 0;
 }

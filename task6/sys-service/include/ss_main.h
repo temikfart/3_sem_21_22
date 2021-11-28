@@ -12,9 +12,9 @@
 #include <stdarg.h>
 #include <time.h>
 
-#define LOG_LEN 256
+#define PATH_LEN 256
 #define TIME_MARK_LEN 24
-#define MSG_LEN (LOG_LEN - TIME_MARK_LEN)
+#define MSG_LEN (PATH_LEN - TIME_MARK_LEN)
 #define MAX_PERMS 0777
 
 //static const char* path_prefix;
@@ -24,10 +24,21 @@ typedef struct Config {
 //  char* path;           // Path to the config file
   pid_t pid;              // Tracking pid
 } Config;
+typedef struct MapsLine {
+  char* address;
+  char* perms;
+  char* offset;
+  char* device;
+  char* inode;
+  char* path;
+} MapsLine;
 
 void print_instruction(const char* cmd);
 Config parse_console_args(int argc, const char* argv[]);
 char* get_time();
-void create_log(int log_fd, const char* format, ...);
+void create_log(const char* format, ...);
 int preparing();
 void configure_service(Config* Conf);
+MapsLine parse_maps_line(char* line);
+int parse_maps(FILE* maps_file, MapsLine* PML);
+int start_service(pid_t tr_pid);
