@@ -1,7 +1,7 @@
 #include "ss_main.h"
 
-static const char* path_prefix =
-        "/home/temikfart/Desktop/CT/3_sem_21_22/task6/sys-service/";
+//static const char* path_prefix =
+//        "/home/temikfart/Desktop/CT/3_sem_21_22/task6/sys-service/";
 
 void print_instruction(const char* cmd) {
   printf("Usage: %s [PID] [OPTIONS]\n", cmd);
@@ -57,32 +57,31 @@ char* get_time() {
 }
 void create_log(int log_fd, const char* format, ...) {
   char* log = (char*)(calloc(LOG_LEN, sizeof(char)));
-  log[0] = '\0';
   char* time_mark = get_time();
 
-  fprintf(stdout, "%s\n", time_mark);
-  sprintf(log, "%s", time_mark);
-  fprintf(stdout, "%s\n", log);
-  sprintf(log, "\t");
-  fprintf(stdout, "%s\n", log);
+  strcat(log, time_mark);
+  strcat(log, "\t");
 
   va_list ptr;
   va_start(ptr, format);
-  vsprintf(log, format, ptr);
+  char msg[MSG_LEN];
+  vsprintf(msg, format, ptr);
   va_end(ptr);
-  fprintf(stdout, "%s\n", log);
 
-  sprintf(log, "\n");
-  fprintf(stdout, "%s\n", log);
+  strcat(log, msg);
+  strcat(log, "\n");
 
   write(log_fd, log, strlen(log));
   free(log);
 }
 int preparing() {     // TODO: in the next features, accept Config arg.
   // Open log file, if -d option
-  char* log_path = strdup(path_prefix);
-  log_path = strcat(log_path, "log/log.txt");
-  int log_fd = open(log_path, O_CREAT | O_WRONLY | O_APPEND);
+//  char* log_path = strdup(path_prefix);
+//  log_path = strcat(log_path, "log/log.txt");
+  const char log_path[] = "../log/log.txt";
+  int log_fd = open(log_path,
+                    O_CREAT | O_RDWR | O_APPEND,
+                    S_IRUSR | S_IWUSR);
   if (log_fd == -1) {
     printf("Can't open %s\n", log_path);
     perror("Can't open log.txt");
@@ -98,11 +97,11 @@ int preparing() {     // TODO: in the next features, accept Config arg.
       || close(fileno(stdout)) == -1
       || close(fileno(stderr)) == -1) {
     // Closing file descriptors fail
-    create_log(log_fd, "Closing file descriptors: FAIL");
+    create_log(log_fd, "FAIL: %s", strerror(errno));
     return -1;
   } else {
     // Closing file descriptors succeed
-    create_log(log_fd, "Closing file descriptors: SUCCEED");
+    create_log(log_fd, "SUCCEED");
   }
 
   // ----- Create new session -----
@@ -110,7 +109,7 @@ int preparing() {     // TODO: in the next features, accept Config arg.
   pid_t sid = setsid();
   if (sid == -1) {
     // Create new session fail
-    create_log(log_fd, "Creating new session: FAIL");
+    create_log(log_fd, "FAIL: %s", strerror(errno));
     return -1;
   } else {
     // Create new session succeed
@@ -120,11 +119,14 @@ int preparing() {     // TODO: in the next features, accept Config arg.
   // ----- Set the file creation permissions -----
   create_log(log_fd, "Set the file creation permissions..");
   umask(0);
-  create_log(log_fd, "SUCCEED: Perms: %o", MAX_PERMS);
+  create_log(log_fd, "SUCCEED: Perms: %04o", MAX_PERMS);
 
   // ----- Change current directory -----
   create_log(log_fd, "Changing current directory..");
-  chdir("/");
+  if (chdir("/") == -1) {
+    // Changing current directory fail
+    create_log(log_fd, "FAIL: %s", strerror(errno));
+  }
   create_log(log_fd, "SUCCEED: current directory is \"/\"");
 
   // ----- COMPLETED -----
@@ -138,7 +140,7 @@ void configure_service(Config* Conf) {
 
   // TODO: use daemon mode, if it turned on
   if (preparing() == -1) {
-    open(stdin, O_WRONLY);
+    open(stdout, O_WRONLY);
     printf("Preparing failed\n");
     exit(1);
   }

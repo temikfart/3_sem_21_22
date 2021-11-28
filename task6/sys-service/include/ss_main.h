@@ -13,9 +13,11 @@
 #include <time.h>
 
 #define LOG_LEN 256
+#define TIME_MARK_LEN 24
+#define MSG_LEN (LOG_LEN - TIME_MARK_LEN)
 #define MAX_PERMS 0777
 
-static const char* path_prefix;
+//static const char* path_prefix;
 
 typedef struct Config {
   u_char options;         // 0000 000D; D -- daemon mode
