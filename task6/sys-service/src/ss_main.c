@@ -185,7 +185,7 @@ MapsLine parse_maps_line(char* line) {
   
   return PML;
 }
-int parse_maps(FILE* maps_file, MapsLine* PML) {
+int parse_maps(FILE* maps_file, MapsLine** PML) {
   create_log("Parsing maps file started");
   
   char* buf = NULL;
@@ -200,8 +200,8 @@ int parse_maps(FILE* maps_file, MapsLine* PML) {
     
     // TODO: Retrieving lines into array
     PML_sz += sizeof(MapsLine);
-    PML = realloc(PML, PML_sz);
-    PML[count] = parse_maps_line(buf);
+    *PML = realloc(*PML, PML_sz);
+    (*PML)[count] = parse_maps_line(buf);
     
 //    if() {
 //      create_log("Parsing of line #%d: FAIL", (count + 1));
@@ -209,7 +209,7 @@ int parse_maps(FILE* maps_file, MapsLine* PML) {
 //    }
   
     create_log("Parsing maps line: SUCCEED");
-    print_parsed_maps_line(&PML[count]);
+    print_parsed_maps_line(&(*PML)[count]);
     count++;
   }
   
@@ -234,40 +234,50 @@ void print_diff_PML(MapsLine* Cur, MapsLine* Next) {
   print_parsed_maps_line(Next);
   create_log("<<<<<");
 }
-int PML_diff(MapsLine* Cur, int cnt_cur, MapsLine* Next, int cnt_next) {
+int PML_diff(MapsLine** Cur, int cnt_cur, MapsLine** Next, int cnt_next) {
   create_log("Diff is started..");
-  create_log("%ld %ld", sizeof(Cur[0]), sizeof(Next[cnt_next-1]));
-  create_log("%s %s", Cur[0].address, Next[0].address);
   for(int i = 0; i < cnt_next && i < cnt_cur; i++) {
-    if (strcmp(Cur[i].address, Next[i].address) != 0) {
-      print_diff_PML(&Cur[i], &Next[i]);
-      continue;
+    if ((*Cur)[i].address != NULL && (*Next)[i].address != NULL) {
+      if (strcmp((*Cur)[i].address, (*Next)[i].address) != 0) {
+        print_diff_PML(&(*Cur)[i], &(*Next)[i]);
+        continue;
+      }
     }
-    if (strcmp(Cur[i].perms, Next[i].perms) != 0) {
-      print_diff_PML(&Cur[i], &Next[i]);
-      continue;
+    if ((*Cur)[i].perms != NULL && (*Next)[i].perms != NULL) {
+      if (strcmp((*Cur)[i].perms, (*Next)[i].perms) != 0) {
+        print_diff_PML(&(*Cur)[i], &(*Next)[i]);
+        continue;
+      }
     }
-    if (strcmp(Cur[i].offset, Next[i].offset) != 0) {
-      print_diff_PML(&Cur[i], &Next[i]);
-      continue;
+    if ((*Cur)[i].offset != NULL && (*Next)[i].offset != NULL) {
+      if (strcmp((*Cur)[i].offset, (*Next)[i].offset) != 0) {
+        print_diff_PML(&(*Cur)[i], &(*Next)[i]);
+        continue;
+      }
     }
-    if (strcmp(Cur[i].device, Next[i].device) != 0) {
-      print_diff_PML(&Cur[i], &Next[i]);
-      continue;
+    if ((*Cur)[i].device != NULL && (*Next)[i].device != NULL) {
+      if (strcmp((*Cur)[i].device, (*Next)[i].device) != 0) {
+        print_diff_PML(&(*Cur)[i], &(*Next)[i]);
+        continue;
+      }
     }
-    if (strcmp(Cur[i].inode, Next[i].inode) != 0) {
-      print_diff_PML(&Cur[i], &Next[i]);
-      continue;
+    if ((*Cur)[i].inode != NULL && (*Next)[i].inode != NULL) {
+      if (strcmp((*Cur)[i].inode, (*Next)[i].inode) != 0) {
+        print_diff_PML(&(*Cur)[i], &(*Next)[i]);
+        continue;
+      }
     }
-    if (strcmp(Cur[i].path, Next[i].path) != 0) {
-      print_diff_PML(&Cur[i], &Next[i]);
-      continue;
+    if ((*Cur)[i].path != NULL && (*Next)[i].path != NULL) {
+      if (strcmp((*Cur)[i].path, (*Next)[i].path) != 0) {
+        print_diff_PML(&(*Cur)[i], &(*Next)[i]);
+        continue;
+      }
     }
   }
   
   return 0;
 }
-int PML_swap(MapsLine* Cur, MapsLine* Next) {
+int PML_swap(MapsLine** Cur, MapsLine** Next) {
   return 0;
 }
 int start_service(pid_t tr_pid) {
@@ -294,7 +304,7 @@ int start_service(pid_t tr_pid) {
   create_log("Parsing maps file..");
   // Parse /proc/${PID}/maps for the first time
   MapsLine* PML_Cur = NULL;
-  int lines_count_cur = parse_maps(maps_file, PML_Cur);
+  int lines_count_cur = parse_maps(maps_file, &PML_Cur);
   check_parse_maps_err(lines_count_cur);
   fclose(maps_file);
   
@@ -311,11 +321,13 @@ int start_service(pid_t tr_pid) {
     }
     
     MapsLine* PML_Next = NULL;
-    int lines_count_next = parse_maps(maps_file, PML_Next);
+    int lines_count_next = parse_maps(maps_file, &PML_Next);
     check_parse_maps_err(lines_count_next);
     
-    PML_diff(PML_Cur, lines_count_cur,
-             PML_Next, lines_count_next);
+    PML_diff(&PML_Cur, lines_count_cur,
+             &PML_Next, lines_count_next);
+  
+    create_log("Diff was completed SUCCESSFULLY\n");
     
     //PML_swap(PML_Cur, PML_Next);
     

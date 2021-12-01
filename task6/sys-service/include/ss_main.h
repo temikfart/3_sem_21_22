@@ -16,7 +16,7 @@
 #define TIME_MARK_LEN 24
 #define MSG_LEN (PATH_LEN - TIME_MARK_LEN)
 #define MAX_PERMS 0777
-#define SLEEP_TIME 5
+#define SLEEP_TIME 60
 
 //static const char* path_prefix;
 
@@ -40,9 +40,10 @@ char* get_time();
 void create_log(const char* format, ...);
 int preparing();
 void configure_service(Config* Conf);
+void print_parsed_maps_line(MapsLine* PML);
 MapsLine parse_maps_line(char* line);
-int parse_maps(FILE* maps_file, MapsLine* PML);
+int parse_maps(FILE* maps_file, MapsLine** PML);
 int start_service(pid_t tr_pid);
 int check_parse_maps_err(int count);
-int PML_diff(MapsLine* Cur, int cnt_cur, MapsLine* Next, int cnt_next);
-int PML_swap(MapsLine* Cur, MapsLine* Next);
+int PML_diff(MapsLine** Cur, int cnt_cur, MapsLine** Next, int cnt_next);
+int PML_swap(MapsLine** Cur, MapsLine** Next);
