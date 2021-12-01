@@ -216,6 +216,60 @@ int parse_maps(FILE* maps_file, MapsLine* PML) {
   free(buf);
   return count;
 }
+int check_parse_maps_err(int count) {
+  if (count == -1) {
+    // Parsing maps' lines fail
+    create_log("Parsing maps file: FAIL");
+    return -1;
+  } else {
+    create_log("Parsing maps file is completed. "
+               "There are %d lines\n\n", count);
+  }
+  return 0;
+}
+void print_diff_PML(MapsLine* Cur, MapsLine* Next) {
+  create_log(">>>>>");
+  print_parsed_maps_line(Cur);
+  create_log("-----");
+  print_parsed_maps_line(Next);
+  create_log("<<<<<");
+}
+int PML_diff(MapsLine* Cur, int cnt_cur, MapsLine* Next, int cnt_next) {
+  create_log("Diff is started..");
+  create_log("%ld %ld", sizeof(Cur[0]), sizeof(Next[cnt_next-1]));
+  create_log("%s %s", Cur[0].address, Next[0].address);
+  for(int i = 0; i < cnt_next && i < cnt_cur; i++) {
+    if (strcmp(Cur[i].address, Next[i].address) != 0) {
+      print_diff_PML(&Cur[i], &Next[i]);
+      continue;
+    }
+    if (strcmp(Cur[i].perms, Next[i].perms) != 0) {
+      print_diff_PML(&Cur[i], &Next[i]);
+      continue;
+    }
+    if (strcmp(Cur[i].offset, Next[i].offset) != 0) {
+      print_diff_PML(&Cur[i], &Next[i]);
+      continue;
+    }
+    if (strcmp(Cur[i].device, Next[i].device) != 0) {
+      print_diff_PML(&Cur[i], &Next[i]);
+      continue;
+    }
+    if (strcmp(Cur[i].inode, Next[i].inode) != 0) {
+      print_diff_PML(&Cur[i], &Next[i]);
+      continue;
+    }
+    if (strcmp(Cur[i].path, Next[i].path) != 0) {
+      print_diff_PML(&Cur[i], &Next[i]);
+      continue;
+    }
+  }
+  
+  return 0;
+}
+int PML_swap(MapsLine* Cur, MapsLine* Next) {
+  return 0;
+}
 int start_service(pid_t tr_pid) {
   // ----- STARTING SERVICE -----
   create_log("Starting service..");
@@ -239,15 +293,33 @@ int start_service(pid_t tr_pid) {
   
   create_log("Parsing maps file..");
   // Parse /proc/${PID}/maps for the first time
-  MapsLine* ParsedMapsLines = NULL;
-  int lines_count = parse_maps(maps_file, ParsedMapsLines);
-  if (lines_count == -1) {
-    // Parsing maps' lines fail
-    create_log("Parsing maps file: FAIL");
-    return -1;
-  } else {
-    create_log("Parsing maps file is completed. "
-               "There are %d lines\n\n", lines_count);
+  MapsLine* PML_Cur = NULL;
+  int lines_count_cur = parse_maps(maps_file, PML_Cur);
+  check_parse_maps_err(lines_count_cur);
+  fclose(maps_file);
+  
+  while(1) {
+    sleep(SLEEP_TIME);
+  
+    create_log("Opening \"%s\"..", maps_path);
+    maps_file = fopen(maps_path, "r");
+    if (maps_file == NULL) {
+      create_log("FAIL: Can't open %s: %s\n", maps_path, strerror(errno));
+      return -1;
+    } else {
+      create_log("SUCCEED");
+    }
+    
+    MapsLine* PML_Next = NULL;
+    int lines_count_next = parse_maps(maps_file, PML_Next);
+    check_parse_maps_err(lines_count_next);
+    
+    PML_diff(PML_Cur, lines_count_cur,
+             PML_Next, lines_count_next);
+    
+    //PML_swap(PML_Cur, PML_Next);
+    
+    break;
   }
   
   
