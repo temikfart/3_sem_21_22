@@ -1,49 +1,7 @@
 #pragma once
 
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <errno.h>
-#include <unistd.h>
-#include <getopt.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <stdarg.h>
-#include <time.h>
 
-#define PATH_LEN 256
-#define TIME_MARK_LEN 24
-#define MSG_LEN (PATH_LEN - TIME_MARK_LEN)
-#define MAX_PERMS 0777
-#define SLEEP_TIME 60
-
-//static const char* path_prefix;
-
-typedef struct Config {
-  u_char options;         // 0000 000D; D -- daemon mode
-//  char* path;           // Path to the config file
-  pid_t pid;              // Tracking pid
-} Config;
-typedef struct MapsLine {
-  char* address;
-  char* perms;
-  char* offset;
-  char* device;
-  char* inode;
-  char* path;
-} MapsLine;
-
-void print_instruction(const char* cmd);
-Config parse_console_args(int argc, const char* argv[]);
-char* get_time();
-void create_log(const char* format, ...);
-int preparing();
-void configure_service(Config* Conf);
-void print_parsed_maps_line(MapsLine* PML);
-MapsLine parse_maps_line(char* line);
-int parse_maps(FILE* maps_file, MapsLine** PML);
-int start_service(pid_t tr_pid);
-int check_parse_maps_err(int count);
-int PML_diff(MapsLine** Cur, int cnt_cur, MapsLine** Next, int cnt_next);
-int PML_swap(MapsLine** Cur, MapsLine** Next);
+#include "ss_config.h"
+#include "ss_log.h"
+#include "ss_start.h"
