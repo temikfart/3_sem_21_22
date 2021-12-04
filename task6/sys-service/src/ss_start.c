@@ -30,9 +30,9 @@ int start_service(pid_t tr_pid) {
   
   fclose(maps_file);
   
-  int i = 10;
+//  int i = 1;
   create_log("SUCCEED: Service started!\n");
-  while(i-- != 0) {
+  while(1) {
     sleep(SLEEP_TIME);
     
     if (open_maps_file(tr_pid) == -1) {
@@ -48,7 +48,7 @@ int start_service(pid_t tr_pid) {
     }
     
     PML_diff(&PML_Cur, num_lns_cur, &PML_Next, num_lns_next);
-    PML_swap(&PML_Cur, num_lns_cur, &PML_Next);
+    PML_swap(&PML_Cur, &num_lns_cur, &PML_Next, &num_lns_next);
     
     fclose(maps_file);
   }
@@ -187,17 +187,23 @@ int PML_diff(MapsLine** Cur, int cnt_cur, MapsLine** Next, int cnt_next) {
   create_log("Diff was completed SUCCESSFULLY\n");
   return 0;
 }
-int PML_swap(MapsLine** Cur, int cnt_cur, MapsLine** Next) {
+int PML_swap(MapsLine** Cur, int* cnt_cur, MapsLine** Next, int* cnt_next) {
   create_log("Swapping is started..");
   
+  // Swap arrays
   MapsLine* tmp = *Cur;
   *Cur = *Next;
   *Next = tmp;
-  if (free_PML(Next, cnt_cur) == -1) {
+  
+  if (free_PML(Next, *cnt_cur) == -1) {
     create_log("FAIL: free ended with error");
     return -1;
   }
   *Next = NULL;
+  
+  // Swap number of lines
+  *cnt_cur = *cnt_next;
+  *cnt_next = 0;
   
   create_log("Swap: SUCCEED\n");
   return 0;

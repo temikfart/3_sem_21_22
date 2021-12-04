@@ -60,6 +60,8 @@ int preparing() {     // TODO: in the next features, accept Config arg.
   // Open log file
   start_log();
   
+  create_log("Configuration has begun.");
+  
   // ----- Start preparing -----
   create_log("Preparation has begun.");
   
@@ -105,24 +107,48 @@ int preparing() {     // TODO: in the next features, accept Config arg.
     create_log("SUCCEED: Current directory is \"/\"");
   }
   
+  // ----- Block all signals -----
   // TODO: block all signals
+  create_log("Starting block all signals...");
+  
+  sigset_t mask;
+  create_log("Creating mask...");
+  if (sigfillset(&mask) == -1) {
+    create_log("FAIL: %s", strerror(errno));
+    return -1;
+  } else {
+    create_log("SUCCEED");
+  }
+  if (sigprocmask(SIG_SETMASK, &mask, NULL) == -1) {
+    create_log("FAIL: %s", strerror(errno));
+    return -1;
+  } else {
+    create_log("SUCCEED: All signals are blocked.");
+  }
   
   // ----- COMPLETED -----
   create_log("Preparation completed successfully.");
   return 0;
 }
 void configure_service(Config* Conf) {
-  printf("Configuration has begun.");
+  log_fd = fileno(stdout);
   
   // TODO: parsing Conf->path file and get configuration of the service
   
   // TODO: use daemon mode, if it turned on
-  if (preparing() == -1) {
-    open(stdout, O_WRONLY);
-    printf("Preparation failed\n");
-    
-    exit(1);
+  switch(Conf->options & 1) {
+    case 0:
+      create_log("Configuration has begun.");
+      break;
+    case 1:
+      if (preparing() == -1) {
+        open(stdout, O_WRONLY);
+        printf("Preparation failed\n");
+  
+        exit(1);
+      }
+      break;
   }
-
+  
   create_log("Configuration completed successfully.\n");
 }

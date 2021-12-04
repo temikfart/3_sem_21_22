@@ -9,7 +9,7 @@
 #include "ss_log.h"
 #include "ss_error.h"
 
-#define SLEEP_TIME 120
+#define SLEEP_TIME 10
 #define MAPSLINE_FIELD_CNT 6
 
 typedef struct MapsLine {
@@ -27,6 +27,6 @@ MapsLine parse_maps_line(char* line);
 int parse_maps(MapsLine** PML);
 int PML_diff(MapsLine** Cur, int cnt_cur, MapsLine** Next, int cnt_next);
 int free_PML(MapsLine** pPML, int num_lines);
-int PML_swap(MapsLine** Cur, int cnt_cur, MapsLine** Next);
+int PML_swap(MapsLine** Cur, int* cnt_cur, MapsLine** Next, int* cnt_next);
 int open_maps_file(pid_t tr_pid);
 int start_service(pid_t tr_pid);

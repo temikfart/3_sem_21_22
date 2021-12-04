@@ -8,6 +8,7 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <unistd.h>
+#include <signal.h>
 
 #include "ss_log.h"
 
