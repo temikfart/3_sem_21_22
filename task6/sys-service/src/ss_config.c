@@ -105,6 +105,8 @@ int preparing() {     // TODO: in the next features, accept Config arg.
     create_log("SUCCEED: Current directory is \"/\"");
   }
   
+  // TODO: block all signals
+  
   // ----- COMPLETED -----
   create_log("Preparation completed successfully.");
   return 0;

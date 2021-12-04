@@ -9,7 +9,7 @@
 #include "ss_log.h"
 #include "ss_error.h"
 
-#define SLEEP_TIME 1
+#define SLEEP_TIME 120
 #define MAPSLINE_FIELD_CNT 6
 
 typedef struct MapsLine {

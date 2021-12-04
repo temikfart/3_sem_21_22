@@ -30,7 +30,7 @@ int start_service(pid_t tr_pid) {
   
   fclose(maps_file);
   
-  int i = 1;
+  int i = 10;
   create_log("SUCCEED: Service started!");
   while(i-- != 0) {
     sleep(SLEEP_TIME);
