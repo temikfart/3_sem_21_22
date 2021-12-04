@@ -3,3 +3,4 @@ a.out
 cmake-build-debug
 src.txt
 dst.txt
+log.*
