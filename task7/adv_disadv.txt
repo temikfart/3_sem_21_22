@@ -22,3 +22,6 @@ EPOLL
 1) + масштабируемость
 2) - только для Linux
 3) - некоторая громоздкость API
+
+Moreover:
+https://blog.csdn.net/gaoxiangnumber1/article/details/52612499
