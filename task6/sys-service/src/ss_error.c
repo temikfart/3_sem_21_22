@@ -7,7 +7,7 @@ int check_parse_maps_err(int count) {
     return -1;
   } else {
     create_log("Parsing maps file is completed. "
-               "There are %d lines\n\n", count);
+               "There are %d lines\n", count);
   }
   return 0;
 }

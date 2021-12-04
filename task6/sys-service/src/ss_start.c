@@ -4,7 +4,7 @@ static FILE* maps_file;
 
 int start_service(pid_t tr_pid) {
   // ----- STARTING SERVICE -----
-  create_log("Starting service...");
+  create_log("Starting service...\n");
   
   create_log("Tracking pid: %d", tr_pid);
   
@@ -13,7 +13,7 @@ int start_service(pid_t tr_pid) {
   }
   
   // ----- Parse /proc/${PID}/maps for the first time -----
-  create_log("Parsing maps file..");
+  create_log("Parsing maps file...\n");
   
   MapsLine* PML_Cur = NULL;
   MapsLine* PML_Next = NULL;
@@ -31,7 +31,7 @@ int start_service(pid_t tr_pid) {
   fclose(maps_file);
   
   int i = 10;
-  create_log("SUCCEED: Service started!");
+  create_log("SUCCEED: Service started!\n");
   while(i-- != 0) {
     sleep(SLEEP_TIME);
     
@@ -53,7 +53,7 @@ int start_service(pid_t tr_pid) {
     fclose(maps_file);
   }
   free_PML(&PML_Cur, num_lns_cur);
-  
+
   return 0;
 }
 int open_maps_file(pid_t tr_pid) {
@@ -85,7 +85,7 @@ int parse_maps(MapsLine** PML) {
   int count = 0;
   
   while((read_sz = getline(&buf, &len, maps_file)) != -1) {
-    create_log("Retrieved line of length %zu", read_sz);
+//    create_log("Retrieved line of length %zu", read_sz);
     
     // TODO: Retrieving lines into array
     PML_sz += sizeof(MapsLine);
@@ -96,7 +96,7 @@ int parse_maps(MapsLine** PML) {
       create_log("Parsing of line #%d: FAIL", (count + 1));
       return -1;
     } else {
-      create_log("Parsing maps line: SUCCEED");
+//      create_log("Parsing maps line: SUCCEED");
     }
     print_parsed_maps_line(&(*PML)[count]);
     count++;
@@ -199,7 +199,7 @@ int PML_swap(MapsLine** Cur, int cnt_cur, MapsLine** Next) {
   }
   *Next = NULL;
   
-  create_log("Swap: SUCCEED");
+  create_log("Swap: SUCCEED\n");
   return 0;
 }
 int free_PML(MapsLine** pPML, int num_lines) {

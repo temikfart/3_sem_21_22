@@ -123,7 +123,6 @@ void configure_service(Config* Conf) {
     
     exit(1);
   }
-  
-  // If mode = i
-  printf("Configuration completed successfully.\n");
+
+  create_log("Configuration completed successfully.\n");
 }
