@@ -7,6 +7,8 @@ set(EXECUTABLE_NAME "server")
 
 include_directories(include)
 add_executable(${EXECUTABLE_NAME}
+        src/s_interact.c
+        include/s_interact.h
         src/s_main.c
         include/s_main.h
         )

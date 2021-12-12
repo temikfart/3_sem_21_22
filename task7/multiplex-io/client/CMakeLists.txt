@@ -7,6 +7,8 @@ set(EXECUTABLE_NAME "client")
 
 include_directories(include)
 add_executable(${EXECUTABLE_NAME}
+        src/cn_interact.c
+        include/cn_interact.h
         src/cn_main.c
         include/cn_main.h
         )

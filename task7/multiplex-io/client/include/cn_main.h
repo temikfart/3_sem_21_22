@@ -10,12 +10,18 @@
 #include <unistd.h>
 #include <errno.h>
 
+#include "cn_interact.h"
+
+#define CMD_SZ 1024
+
 #define MAX_PATH 256
-#define S_FIFO_REL "../../server/channels/"
 #define S_FIFO_REG "server_reg"     // Registration fifo
 #define S_FIFO_RSP "server_rsp"     // Response fifo
 
-char* cn_mkfifo_name(pid_t pid, const char* suf);
-int cn_open_s_fifo(const char* fifo_name, int flags);
-int cn_close_s_fifo(int fd);
-int cn_reg(char* fifo_tx, char* fifo_rx);
+#define DEFAULT_RSP "ASK\n"
+
+static int s_fifo_reg_fd;
+static int s_fifo_rsp_fd;
+
+int cn_reg();
+int cn_work();
