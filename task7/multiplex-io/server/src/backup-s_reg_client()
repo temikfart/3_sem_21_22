@@ -1,0 +1,45 @@
+/* ---- Create set of fds ---- */
+  fd_set reg;
+  FD_ZERO(&reg);
+  FD_SET(s_fifo_reg_fd, &reg);
+
+  /* ---- Additional variables ---- */
+  struct timeval tv;
+  int retval;
+
+  /* ---- Registration ---- */
+  while (1) {
+    tv.tv_sec = 5;
+    tv.tv_usec = 0;
+
+    /* ---- Check on changes in fd set ---- */
+    retval = select(1, NULL, &reg, NULL, &tv);
+    /* ---- Check what's happened ---- */
+    switch (retval) {
+      /* ---- Something went wrong with select() ---- */
+      case -1:
+        perror("select error");
+        return 1;
+      /* ---- Timeout ---- */
+      case 0:
+        printf("Waiting\n");
+        break;
+      /* ---- Someone has registered ---- */
+      default:
+        if (FD_ISSET(s_fifo_reg_fd, &reg)) {
+          /* ---- Accept the request ---- */
+          char buf[5*MAX_PATH];
+          read(s_fifo_reg_fd, buf, 5*MAX_PATH);
+          printf("Server: Received: <%s>.\n", buf);
+//          if (s_check_reg_request() == -1) {
+//            printf("Server: Bad registration. Wrong command.\n");
+//          } else {
+//            printf("Server: New client has been registered.\n");
+//            s_register(&retval);
+//          }
+        } else {
+          /* ---- Miss of checked fd from set ---- */
+          printf("Server: Bad registration. Miss.\n");
+        }
+    }
+  }

@@ -3,11 +3,17 @@
 static Client Clients[MAX_CLIENT];
 static int client_max = 0;
 
+static threadpool ThPool;
+
 static int s_fifo_reg_fd_r;
 static int s_fifo_rsp_fd_w;
 
 static int s_fifo_reg_fd_w;
 static int s_fifo_rsp_fd_r;
+
+static int epoll_fd;
+
+pthread_mutex_t pmutex = PTHREAD_MUTEX_INITIALIZER;
 
 int s_prepare() {
   printf("Server: Preparation started.\n");
@@ -35,12 +41,28 @@ int s_prepare() {
     Clients[i].fifo_tx[0] = '\0';
     Clients[i].fifo_rx[0] = '\0';
     Clients[i].is_active = INACTIVE;
+    Clients[i].event.events = EPOLLIN;
+    Clients[i].event.data.fd = -1;    // tx fd
+    Clients[i].event.data.u32 = -1;   // rx fd
   }
+
+  ThPool = thpool_init(THREAD_AMOUNT);
   /* ---- ---- ---- ---- ---- ---- ---- */
+
+  /* ---- Create epoll ---- */
+  pthread_t epoll_pthread;
+  Arg Epoll_Args;
+  pthread_create(&epoll_pthread,
+                 NULL,
+                 s_epoll,
+                 &Epoll_Args);
+  printf("Server: Created pthread(id=%ld) with epoll",
+         epoll_pthread);
+  /* ---- ---- ---- ---- ---- */
 
   return 0;
 }
-int s_reg_clients() {
+int s_register_clients() {
   printf("Server: Waiting for clients.\n");
   char request[BUF_SZ] = "\0";
   while (1) {
@@ -53,14 +75,13 @@ int s_reg_clients() {
       request[strlen(request) - 1] = '\0';
       printf("\tRequest: %s\n", request);
 
-      if (s_check_reg(request) == -1) {
+      if (s_check_reg_request(request) == -1) {
         printf("Server: Bad registration. Wrong command:\n\t%s\n", request);
       } else {
-        printf("Server: New client has been registered.\n");
+        int client_num = client_max-1;
+        s_register(&client_num);
 
-        Arg Arguments;
-        Arguments.client_num = client_max-1;
-        s_draft(&Arguments);
+        printf("Server: New client has been registered.\n");
       }
     }
     /* ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- */
@@ -70,7 +91,7 @@ int s_reg_clients() {
   return 0;
 }
 
-int s_check_reg(char* request) {
+int s_check_reg_request(char* request) {
   /* ---- Receive request ---- */
   char cmd[CMD_SZ] = "\0";
   strcat(cmd, request);
@@ -109,12 +130,12 @@ int s_check_reg(char* request) {
 
   return 0;
 }
-void s_draft(void* Arguments) {
-  Arg *A = (Arg*)Arguments;
-  Client* Cn = &Clients[A->client_num];
+void s_register(void* Arguments) {
+  int *client_num = (int*)Arguments;
+  Client* Cn = &Clients[*client_num];
 
   printf("Server: Start working with new client in the new thread.\n");
-  printf("\tClient #%d is %s:\n\t\t%s\n\t\t%s\n", A->client_num,
+  printf("\tClient #%d is %s:\n\t\t%s\n\t\t%s\n", *client_num,
          Cn->is_active ? "active" : "inactive",
          Cn->fifo_tx,
          Cn->fifo_rx);
@@ -140,7 +161,7 @@ void s_draft(void* Arguments) {
   cn_fifo_rx_fd_w = s_open_fifo(Cn->fifo_rx,
                                 O_WRONLY
                                 | O_APPEND);
-  /* ---- ---- ---- ---- ---- */
+  /* ---- ---- ---- ---- ---- ---- ---- ---- */
 
   /* ---- Write response to the client ---- */
   if (write(s_fifo_rsp_fd_w,
@@ -152,10 +173,101 @@ void s_draft(void* Arguments) {
   printf("Server: tx/rx fifo configured.\n");
   /* ---- ---- ---- ---- ---- ---- ---- ---- */
 
-  s_unlink_fifo(Cn->fifo_tx);
-  s_unlink_fifo(Cn->fifo_rx);
+  /* ---- Add fd to epoll ---- */
+  Cn->event.data.fd = cn_fifo_tx_fd_r;
+  Cn->event.data.u32 = cn_fifo_rx_fd_w;
 
-  printf("Server: Work with Client#%d ended", A->client_num);
+  /* ---- CRITICAL SECTION ---- */
+  pthread_mutex_lock(&pmutex);
+
+  if(epoll_ctl(epoll_fd, EPOLL_CTL_ADD, 0, &(Cn->event))) {
+    perror("Failed to add file descriptor to epoll");
+    close(epoll_fd);
+    exit(1);
+  }
+
+  pthread_mutex_unlock(&pmutex);
+  /* ---- ---- ---- ---- ---- */
+
+  printf("Client #%d was added to epoll\n", *client_num);
+  /* ---- ---- ---- ---- ---- */
+}
+
+void* s_epoll(void* Arguments) {
+  /* ---- Create epoll ---- */
+  printf("Server: Creating epoll..\n");
+  epoll_fd = epoll_create1(0);
+  if(epoll_fd == -1) {
+    perror("Failed to create epoll file descriptor");
+    exit(1);
+  }
+  /* ---- ---- ---- ---- ---- */
+
+  /* ---- Declare variables for epoll ---- */
+  int event_count;
+  struct epoll_event events[MAX_EVENTS];
+  int running = 1;
+  /* ---- ---- ---- ---- ---- ---- ---- */
+
+  while(running) {
+    printf("\nPolling for input...\n");
+    event_count = epoll_wait(epoll_fd, events,
+                             MAX_EVENTS,
+                             30000);
+    printf("%d ready events\n", event_count);
+
+    /* ---- CRITICAL SECTION ---- */
+    pthread_mutex_lock(&pmutex);
+
+    for(int i = 0; i < event_count; i++) {
+      printf("Server: processing request #%d", i);
+
+      struct epoll_event* req_event = malloc(sizeof(events[i]));
+      thpool_add_work(ThPool,
+                      s_processing_request,
+                      (void*)req_event);
+    }
+
+    pthread_mutex_unlock(&pmutex);
+    /* ---- ---- ---- ---- ---- */
+  }
+}
+
+void s_processing_request(void* Arguments) {
+  struct epoll_event* event = (struct epoll_event*)Arguments;
+
+  while(1) {
+    /* ---- Scan request ---- */
+    char *request = s_scan_request((int) event->data.fd);
+    if (request == NULL) {
+      printf("Wrong request.\n");
+      return;
+    }
+    /* ---- ---- ---- ---- ---- */
+
+    /* ---- Parse request ---- */
+    char *cmd = strdup(strtok(request, " "));
+    char *path = strdup(strtok(NULL, " "));
+
+    if (strcmp(cmd, "GET") != 0) {
+      printf("Wrong command %s.\n", cmd);
+      free(request);
+      return;
+    }
+
+    path[strlen(path)] = '\0';
+    printf("Got path: %s\n", path);
+    /* ---- ---- ---- ---- ---- */
+
+    /* ---- Processing ---- */
+    printf("Write response into rx(%d)\n", event->data.u32);
+    write((int) event->data.u32, "Hello!", 6);
+    printf("Response was sent.\n");
+    /* ---- ---- ---- ---- */
+
+    break;
+  }
+  printf("Good job!\n");
 }
 
 int main() {
@@ -164,7 +276,7 @@ int main() {
   printf("Server: started.\n");
 
   /* ---- REGISTRATION ---- */
-  s_reg_clients();
+  s_register_clients();
 
   return 0;
 }

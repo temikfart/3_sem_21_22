@@ -44,7 +44,57 @@ int cn_reg() {
   return 0;
 }
 int cn_work() {
+  /* ---- Open fd ---- */
+  int fd_tx = cn_open_fifo(fifo_tx, O_WRONLY);
+  int fd_rx = cn_open_fifo(fifo_rx, O_RDONLY);
+  printf("tx/rx fds opened.\n");
+  /* ---- ---- ---- ---- */
+
+  /* ---- Epoll tx fd ---- */
+  int event_count;
+  struct epoll_event event, events[5];
+  event.data.fd = fd_tx;
+  event.events = EPOLLIN;
+
+  int epoll_fd = epoll_create1(0);
+  if(epoll_ctl(epoll_fd, EPOLL_CTL_ADD, 0, &event)) {
+    perror("Failed to add file descriptor to epoll");
+    close(epoll_fd);
+    exit(1);
+  }
+
+  while(1) {
+    /* ---- Send request ----*/
+    char* request = NULL;
+    request = cn_scan_request();
+    printf("Request: %s", request);
+    write(fd_tx, request, strlen(request));
+    /* ---- ---- ---- ---- */
+
+    event_count = epoll_wait(epoll_fd,
+                             events,
+                             5,
+                             10000);
+    for (int i = 0; i < event_count; i++) {
+      /* ---- Receive response ----*/
+      ssize_t read_sz = 0;
+      char response[MAX_PATH];
+      read_sz = read(events[i].data.fd,
+                     response,
+                     MAX_PATH);
+      if (read_sz == -1) {
+        perror("Read from rx failed");
+        close(fd_tx);
+        close(fd_rx);
+        exit(1);
+      }
+      printf("Response: %s\n", response);
+      /* ---- ---- ---- ---- ---- */
+    }
+    break;
+  }
   printf("Good job!\n");
+
   return 0;
 }
 

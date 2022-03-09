@@ -39,3 +39,19 @@ int s_unlink_fifo(const char* fifo_name) {
   free(fifo_path);
   return 0;
 }
+
+char* s_scan_request(int fd) {
+  printf("Scanning request.\n");
+  ssize_t read_sz;
+  char* request = calloc(MAX_REQUEST, sizeof(char));
+
+  read_sz = read(fd, request, MAX_REQUEST);
+  if (read_sz == -1) {
+    perror("Read request failed");
+    free(request);
+    return NULL;
+  }
+  printf("Request is not NULL.\n");
+
+  return request;
+}

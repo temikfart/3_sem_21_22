@@ -27,3 +27,11 @@ int cn_close_fifo(int fd) {
   }
   return 0;
 }
+
+char* cn_scan_request() {
+  printf("Enter the request:\n");
+  char* request = calloc(MAX_REQUEST, sizeof(char));
+  request = fgets(request, MAX_REQUEST, stdin);
+
+  return request;
+}
