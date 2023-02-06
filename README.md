@@ -102,9 +102,9 @@ CMD INTERFACE:
    <------------------ASK-------------------
    
 # 2. Next, any connected client can request a file from the server with the GET
-<filename> command on its TX, the server is obliged to determine which client
-did it and send it via the client's RX channel. The list of files is known to
-the client and server, so you can score statically.
+# <filename> command on its TX, the server is obliged to determine which client
+# did it and send it via the client's RX channel. The list of files is known to
+# the client and server, so you can score statically.
 
 REQUEST-RESPONSE WORKFLOW:
           GET <filname>                       (S):
@@ -112,11 +112,11 @@ REQUEST-RESPONSE WORKFLOW:
    <------------------file------------------ |fromclient_rx_fifo_fd|
 
 # A note on the server device: the server monitors the status of a set of
-incoming descriptors through the select(...) call, determines the descriptor 
-to which the request came, and then starts the file upload procedure in
-a SEPARATE THREAD. Thus, with a large (within our limitations :)) number 
-of simultaneous requests, the server is non-blocking. For an example of using 
-select(...), see "examples/".
+# incoming descriptors through the select(...) call, determines the descriptor 
+# to which the request came, and then starts the file upload procedure in
+# a SEPARATE THREAD. Thus, with a large (within our limitations :)) number 
+# of simultaneous requests, the server is non-blocking. For an example of using 
+# select(...), see "examples/".
 
 REQUEST-RESPONSE in more detail...:
                                                                     (S):
