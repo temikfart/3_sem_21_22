@@ -93,13 +93,13 @@ Consider the scheme:
 1. The client is registered by sending a message via a special command IPC (it can be a FIFO or a message queue).
 	
 	The registration command contains 3 tokens: `REGISTER <fifo/tx/path> <fifo/rx/path>` - the command and paths to fifo records on the FS for transmitting commands to download files, respectively. Note that there may be more than one client (but not many, let's up to 64).
-2. The server responds with an "ASK" to the client via the reverse communication channel of the selected IPC, saves data and opens 2 FIFOs to interact with it.
+2. The server responds with an "ACK" to the client via the reverse communication channel of the selected IPC, saves data and opens 2 FIFOs to interact with it.
 **Note:** FIFO на сервере следует открывать в `O_RDWR`-режиме (подробнее [здесь](https://stackoverflow.com/questions/14594508/fifo-pipe-is-always-readable-in-select))
 ```shell
 CMD INTERFACE:
     REGISTER <file/tx/path> <fifo/rx/path>
 (Cx) --------------------------------------> (S): open(fromclient_tx_fifo_fd, O_RDWR), open(fromclient_rx_fifo_fd, O_RDWR), then:
-   <------------------ASK-------------------
+   <------------------ACK-------------------
    
 # 2. Next, any connected client can request a file from the server with the GET
 # <filename> command on its TX, the server is obliged to determine which client
